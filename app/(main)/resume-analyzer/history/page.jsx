@@ -1,8 +1,8 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { getResumeAnalyses } from "@/actions/resume-analyzer";
+import { Button } from "../../../../components/ui/button"
+import { getResumeAnalyses } from "../../../../actions/analyzeResume";
 import RecentAnalyses from "../_components/recent-analyses";
 
 const HistoryPage = async () => {

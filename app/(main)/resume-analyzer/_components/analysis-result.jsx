@@ -6,7 +6,7 @@ import { Button } from "../../../../components/ui/button";
 import { Progress } from "../../../../@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../components/ui/tabs";
 import { Award, CheckCircle, AlertTriangle, FileType, List, Lightbulb } from "lucide-react";
-
+import { Badge } from "../../../../components/ui/badge";
 export default function AnalysisResult({ result, hideStartNew = false, onStartNew }) {
   if (!result) return null;
   

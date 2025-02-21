@@ -34,6 +34,7 @@ model User {
   resume        Resume?
   coverLetter   CoverLetter[]
    resumeAnalyses ResumeAnalysis[]
+   roadmaps      Roadmap[]
 }
 
 model Assessment {
@@ -118,6 +119,19 @@ model ResumeAnalysis {
   jobTitle           String
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// prisma/schema.prisma (add to your existing schema)
+model Roadmap {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  skillPath   String    // The skill or career path
+  mermaidCode String    @db.Text // The mermaid diagram code
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([userId])
 }
