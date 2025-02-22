@@ -29,13 +29,14 @@ import {
 import { Badge } from "../../../../@/components/ui/badge";
 import { Progress } from "../../../../@/components/ui/progress";
 
-const DashboardView = ( {insights}) => {
-  const salaryData=insights.salaryRanges.map((range)=>({
-name:range.role,
-min:range.min/1000,
-max:range.max/1000,
-median:range.median/1000,
+const DashboardView = ({ insights }) => {
+  const salaryData = insights.salaryRanges.map((range) => ({
+    name: range.role,
+    min: range.min / 1000,
+    max: range.max / 1000,
+    median: range.median / 1000,
   }));
+
   const getDemandLevelColor = (level) => {
     switch (level.toLowerCase()) {
       case "high":
@@ -48,6 +49,7 @@ median:range.median/1000,
         return "bg-gray-500";
     }
   };
+
   const getMarketOutlookInfo = (outlook) => {
     switch (outlook.toLowerCase()) {
       case "positive":
@@ -60,6 +62,7 @@ median:range.median/1000,
         return { icon: LineChart, color: "text-gray-500" };
     }
   };
+
   const OutlookIcon = getMarketOutlookInfo(insights.marketOutlook).icon;
   const outlookColor = getMarketOutlookInfo(insights.marketOutlook).color;
   const lastUpdatedDate = format(new Date(insights.lastUpdated), "dd/MM/yyyy");
@@ -67,6 +70,7 @@ median:range.median/1000,
     new Date(insights.nextUpdate),
     { addSuffix: true }
   );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

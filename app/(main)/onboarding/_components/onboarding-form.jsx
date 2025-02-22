@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -33,12 +33,12 @@ import useFetch from "../../../../hooks/use-fetch";
 
 const OnboardingForm = ({ industries }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedIndustry, setSelectedIndustry] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
-    loading: updateLoading,
     fn: updateUserFn,
-    data: updateResult,
   } = useFetch(updateUser);
 
   const {
@@ -49,30 +49,42 @@ const OnboardingForm = ({ industries }) => {
     watch,
   } = useForm({
     resolver: zodResolver(onboardingSchema),
+    defaultValues: {
+      industry: "",
+      subIndustry: "",
+      experience: "",
+      skills: "",
+      bio: "",
+    }
   });
 
   const onSubmit = async (values) => {
     try {
+      setIsSubmitting(true);
       const formattedIndustry = `${values.industry}-${values.subIndustry
         .toLowerCase()
         .replace(/ /g, "-")}`;
 
-      await updateUserFn({
+      const result = await updateUserFn({
         ...values,
         industry: formattedIndustry,
       });
+
+      if (result) {
+        localStorage.setItem('isOnboarded', 'true');
+        toast.success("Profile completed successfully!");
+        const redirectUrl = searchParams.get('redirect_url') || '/dashboard';
+        
+        router.refresh();
+        router.push(redirectUrl);
+      }
     } catch (error) {
       console.error("Onboarding error:", error);
+      toast.error("Failed to complete profile. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    if (updateResult?.success && !updateLoading) {
-      toast.success("Profile completed successfully!");
-      router.push("/dashboard");
-      router.refresh();
-    }
-  }, [updateResult, updateLoading]);
 
   const watchIndustry = watch("industry");
 
@@ -195,8 +207,12 @@ const OnboardingForm = ({ industries }) => {
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={updateLoading}>
-              {updateLoading ? (
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...

@@ -29,12 +29,14 @@ export default async function Header() {
         <Link href="/">
           <Image
             src={"/logo.png"}
-            alt="Future Build"
+            alt="Sensai Logo"
             width={200}
             height={60}
-            className="h-12 py-0.1 w-auto object-contain"
+            className="h-12 py-1 w-auto object-contain"
           />
         </Link>
+
+       
         <div className="flex items-center space-x-2 md:space-x-4">
           <SignedIn>
             <Link href="/dashboard">
@@ -49,6 +51,8 @@ export default async function Header() {
                 <LayoutDashboard className="h-4 w-4" />
               </Button>
             </Link>
+
+            {/* Growth Tools Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="flex items-center gap-2">
@@ -79,12 +83,6 @@ export default async function Header() {
                     Interview Prep
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-            <Link href="/resume-analyzer" className="flex items-center gap-2">
-                 <FileText className="h-4 w-4" />
-                  Resume-Analyze
-              </Link>
-          </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SignedIn>

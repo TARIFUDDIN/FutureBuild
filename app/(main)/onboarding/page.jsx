@@ -6,11 +6,10 @@ import { getUserOnboardingStatus } from "../../../actions/user";
 export default async function OnboardingPage() {
   const { isOnboarded } = await getUserOnboardingStatus();
   if (isOnboarded) {
-    redirect("/dashboard"); 
+    redirect("/dashboard");
   }
-
   return (
-    <main className="container mx-auto px-4 py-8">
+    <main>
       <OnboardingForm industries={industries} />
     </main>
   );
