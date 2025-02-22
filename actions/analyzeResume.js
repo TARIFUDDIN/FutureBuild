@@ -105,19 +105,13 @@ export async function getResumeAnalyses() {
 }
 export async function extractResumeText(fileBuffer, fileType) {
   try {
-    // This would be replaced with actual text extraction logic
-    // using libraries like pdf-parse or mammoth
-    
     let extractedText = '';
     
     if (fileType === 'application/pdf') {
-      // For PDF files
-      const pdfParse = require('pdf-parse');
+      const pdfParse = (await import('pdf-parse')).default;
       const data = await pdfParse(fileBuffer);
       extractedText = data.text;
     } else if (fileType.includes('word')) {
-      // For Word documents
-      const mammoth = require('mammoth');
       const result = await mammoth.extractRawText({ buffer: fileBuffer });
       extractedText = result.value;
     } else {

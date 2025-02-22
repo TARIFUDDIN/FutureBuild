@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import fs from 'fs/promises';
 import path from 'path';
@@ -27,6 +26,7 @@ export async function POST(request) {
 
     if (fileType === 'pdf') {
       console.log('Processing PDF with pdf-parse, buffer length:', buffer.length); // Debug
+      const pdfParse = (await import('pdf-parse')).default;
       const pdfData = await pdfParse(buffer);
       extractedText = pdfData.text;
     } else if (fileType === 'docx') {
