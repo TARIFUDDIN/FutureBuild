@@ -14,36 +14,30 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Use a proper temporary directory
     const tempDir = os.tmpdir();
     const tempFilePath = path.join(tempDir, `${Date.now()}-${file.name}`);
     
-    // Write the file temporarily
     await fs.writeFile(tempFilePath, buffer);
 
-    // Extract text based on file type
     let extractedText = '';
     const fileType = file.name.split('.').pop().toLowerCase();
 
     if (fileType === 'pdf') {
-      // Use the buffer directly for pdf-parse
+      console.log('Processing PDF with pdf-parse, buffer length:', buffer.length); // Debug
       const pdfData = await pdfParse(buffer);
       extractedText = pdfData.text;
     } else if (fileType === 'docx') {
-      // Use the temp file path for mammoth
+      console.log('Processing DOCX with mammoth, temp path:', tempFilePath); // Debug
       const result = await mammoth.extractRawText({ path: tempFilePath });
       extractedText = result.value;
     } else {
-      // Clean up before returning error
       await fs.unlink(tempFilePath);
       return NextResponse.json({ error: 'Unsupported file format' }, { status: 400 });
     }
 
-    // Clean up the temporary file
     await fs.unlink(tempFilePath);
 
     return NextResponse.json({ text: extractedText });

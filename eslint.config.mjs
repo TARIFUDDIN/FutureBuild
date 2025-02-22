@@ -2,31 +2,31 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
 
+// Resolve __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Initialize FlatCompat
 const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-// Extend Next.js recommended config and add custom rules/settings
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals"), // Next.js recommended rules
+// Flat config array
+export default [
+  // Extend Next.js recommended config
+  ...compat.extends("next/core-web-vitals"),
+  // Custom config block
   {
-    env: {
-      node: true, // Enable Node.js globals (e.g., process, Buffer)
-      es2021: true, // Modern JS features
+    files: ["**/*.js", "**/*.ts", "**/*.tsx"], // Apply to all JS/TS files
+    languageOptions: {
+      ecmaVersion: 2021, // Modern JS
+      sourceType: "module", // ESM
+      globals: {
+        node: true, // Node.js globals (Buffer, process, etc.)
+      },
     },
     rules: {
-      // Disable or adjust rules causing serialization issues
-      "no-serialize": "off", // If this rule exists in your ESLint version
-      "no-unused-vars": ["warn"], // Example: relax some rules if needed
-    },
-    parserOptions: {
-      ecmaVersion: 2021, // Match env.es2021
-      sourceType: "module", // ESM support
+      "no-unused-vars": ["warn"], // Relax this rule
     },
   },
 ];
-
-export default eslintConfig;
