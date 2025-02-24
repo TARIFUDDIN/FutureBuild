@@ -7,6 +7,7 @@ import {
   GraduationCap,
   ChevronDown,
   StarsIcon,
+  FileSearch,
 
 } from "lucide-react";
 import Link from "next/link";
@@ -67,6 +68,13 @@ export default async function Header() {
                     <FileText className="h-4 w-4" />
                     Build Resume
                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                 
+              <Link href="/resume-analyzer" className="flex items-center gap-2">
+                    <FileSearch className="h-4 w-4" />
+                          Analyze Resume
+                       </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link

@@ -8,6 +8,7 @@ const isProtectedRoute = createRouteMatcher([
   "/interview(.*)",
   "/ai-cover-letter(.*)",
   "/onboarding(.*)",
+  "/resume-analyzer(.*)"
 ]);
 
 const requiresOnboarding = createRouteMatcher([
@@ -15,12 +16,13 @@ const requiresOnboarding = createRouteMatcher([
   "/resume(.*)",
   "/interview(.*)",
   "/ai-cover-letter(.*)",
+  "/resume-analyzer(.*)"
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
 
-  // Handle non-authenticated users
+  
   if (!userId && isProtectedRoute(req)) {
     const { redirectToSignIn } = await auth();
     return redirectToSignIn({

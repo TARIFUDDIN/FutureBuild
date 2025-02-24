@@ -1,4 +1,4 @@
-// app/resume-analyzer/_components/recent-analyses.jsx
+
 import Link from "next/link";
 import { Card, CardContent } from "../../../../@/components/ui/card";
 import { Badge } from "../../../../@/components/ui/badge";
@@ -7,7 +7,6 @@ import { Progress } from "../../../../@/components/ui/progress";
 import { ChevronRight, Clock, Award } from "lucide-react";
 
 export default function RecentAnalyses({ analyses, showAll = false }) {
-  // Format date to be readable
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -16,15 +15,11 @@ export default function RecentAnalyses({ analyses, showAll = false }) {
       year: 'numeric',
     }).format(date);
   };
-  
-  // Determine score color based on ATS score
   const getScoreColor = (score) => {
     if (score >= 80) return "text-green-500";
     if (score >= 60) return "text-amber-500";
     return "text-red-500";
   };
-  
-  // Show only the first n analyses unless showAll is true
   const displayedAnalyses = showAll ? analyses : analyses.slice(0, 3);
   
   return (

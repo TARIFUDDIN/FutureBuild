@@ -24,7 +24,7 @@ export default function QuizList({ assessments }) {
   const [selectedQuiz, setSelectedQuiz] = useState(null);
 
   return (
-    <>
+    <Card>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -88,6 +88,22 @@ export default function QuizList({ assessments }) {
           />
         </DialogContent>
       </Dialog>
-    </>
+      <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="gradient-title text-3xl md:text-4xl">
+                Recent Video Quizzes
+              </CardTitle>
+              <CardDescription>
+                Review your past quiz performance
+              </CardDescription>
+            </div>
+            <Button onClick={() => router.push("/interview/mock")}>
+              Start New Quiz
+            </Button>
+          </div>
+        </CardHeader>
+        </Card>
+    
   );
 }

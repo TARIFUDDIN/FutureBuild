@@ -15,7 +15,7 @@ export const faqs = [
         "We update our industry insights weekly using advanced AI analysis of current market trends. This includes salary data, in-demand skills, and industry growth patterns. Our system constantly evolves to ensure you have the most relevant information for your career decisions.",
     },
     {
-      question: "Is my data secure with Sensai?",
+      question: "Is my data secure with FutureBuild?",
       answer:
         "Absolutely. We prioritize the security of your professional information. All data is encrypted and securely stored using industry-standard practices. We use Clerk for authentication and never share your personal information with third parties.",
     },
