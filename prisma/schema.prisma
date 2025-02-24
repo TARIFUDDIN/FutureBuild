@@ -35,7 +35,7 @@ model User {
   coverLetter   CoverLetter[]
    resumeAnalyses ResumeAnalysis[]
    roadmaps      Roadmap[]
-   videoInterviews VideoInterview[]
+   
 }
 
 model Assessment {
@@ -133,18 +133,6 @@ model Roadmap {
   mermaidCode String    @db.Text // The mermaid diagram code
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  @@index([userId])
-}
-model VideoInterview {
-  id          String   @id @default(cuid())
-  userId      String
-  transcript  String   @db.Text
-  videoUrl    String?
-  analysis    Json     // Stores word count, filler words, pace, duration
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }
