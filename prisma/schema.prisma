@@ -35,7 +35,8 @@ model User {
   coverLetter   CoverLetter[]
    resumeAnalyses ResumeAnalysis[]
    roadmaps      Roadmap[]
-   
+   JobSearch     JobSearch[]
+   JobPortalClick JobPortalClick[]
 }
 
 model Assessment {
@@ -135,4 +136,35 @@ model Roadmap {
   updatedAt   DateTime  @updatedAt
 
   @@index([userId])
+}
+// prisma/schema.prisma (add these models to your existing schema)
+
+model JobSearch {
+  id             String   @id @default(cuid())
+  userId         String
+  jobTitle       String
+  location       String?
+  experienceLevel String?
+  salaryRange    String?
+  jobType        String?
+  portals        String[] // Store portal IDs that were included in search
+  createdAt      DateTime @default(now())
+  
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model JobPortalClick {
+  id             String   @id @default(cuid())
+  userId         String?  // Optional for anonymous users
+  portalId       String
+  jobTitle       String
+  location       String?
+  createdAt      DateTime @default(now())
+  
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([portalId])
 }

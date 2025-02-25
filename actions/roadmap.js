@@ -26,7 +26,7 @@ export async function generateRoadmap(skillPath) {
     user.experience < 3 ? "beginner" :
     user.experience < 7 ? "intermediate" : "advanced";
 
-  // Use the prompt generator from your library
+  
   const prompt = generateRoadmapPrompt(
     skillPath,
     user.industry || "tech",

@@ -1,8 +1,8 @@
-// app/(main)/roadmap/_components/fallback-roadmap.jsx
+
 "use client";
 
 export default function FallbackRoadmap({ code, title }) {
-  // Convert Mermaid flowchart to a simple text representation
+ 
   const parseTextRoadmap = (mermaidCode) => {
     try {
       const lines = mermaidCode.split('\n');

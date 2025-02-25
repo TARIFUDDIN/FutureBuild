@@ -5,10 +5,17 @@ import {
   ScrollText, 
   FileSearch, 
   Route, 
-  SearchCheck 
+  SearchCheck, 
+  Globe
 } from "lucide-react";
 
 export const features = [
+  {
+    icon: <Globe className="w-10 h-10 mb-4 text-primary" />, // New icon
+    title: "Multi-Portal Job Search",
+    description:
+      "Search across multiple job portals like LinkedIn, Naukri, Indeed, and more in one place.",
+  },
   {
     icon: <BrainCircuit className="w-10 h-10 mb-4 text-primary" />,
     title: "AI-Powered Career Guidance",
