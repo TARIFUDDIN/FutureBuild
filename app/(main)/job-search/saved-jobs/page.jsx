@@ -1,17 +1,18 @@
-// app/job-search/saved/page.jsx
-import { auth } from "@/lib/auth";
-import { getSavedJobSearches } from "@/app/actions/job-search";
-import SavedJobSearchesView from "./_components/saved-job-searches-view";
+
+import { checkUser } from "../../../../lib/checkUser";
+import { getSavedJobSearches } from "../../../../actions/job-search";
+import SavedJobSearchesView from "./_components/saved-job-view";
+
 
 export const metadata = {
   title: "Saved Job Searches | AI Career Coach",
   description: "View and manage your saved job searches",
 };
-
 export default async function SavedJobSearchesPage() {
-  const session = await auth();
+  const user = await checkUser();
+  console.log("User after checkUser:", user);
   
-  if (!session?.user) {
+  if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] text-center p-4">
         <h1 className="text-2xl font-bold mb-4">Sign in Required</h1>
@@ -25,6 +26,7 @@ export default async function SavedJobSearchesPage() {
     );
   }
   
+  // Ensure user session is passed to the component
   const { success, savedSearches, error } = await getSavedJobSearches();
   
   if (!success) {
@@ -38,5 +40,5 @@ export default async function SavedJobSearchesPage() {
     );
   }
   
-  return <SavedJobSearchesView savedSearches={savedSearches} session={session} />;
+  return <SavedJobSearchesView savedSearches={savedSearches} session={user} />;
 }

@@ -1,9 +1,9 @@
-// app/job-search/saved/_components/saved-job-searches-view.jsx
 "use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+
 import { 
   BookmarkIcon, 
   SearchIcon, 
@@ -12,10 +12,10 @@ import {
   TrashIcon,
   ArrowRightIcon
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../../@/components/ui/card";
+import { Button } from "../../../../../components/ui/button";
+import { Badge } from "../../../../../components/ui/badge";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "../../../../../components/ui/alert-dialog";
 import { 
   JOB_PORTALS,
   EXPERIENCE_RANGES,
@@ -34,10 +34,9 @@ import {
   JOB_TYPES,
   searchJobsAcrossPortals
 } from "../../_components/job-portal-service";
-import { deleteSavedJobSearch } from "@/app/actions/job-search";
+import { deleteSavedJobSearch } from "../../../../../actions/job-search";
 
 const SavedJobSearchesView = ({ savedSearches, session }) => {
-  const { toast } = useToast();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedSearchId, setSelectedSearchId] = useState(null);
@@ -48,18 +47,15 @@ const SavedJobSearchesView = ({ savedSearches, session }) => {
       const result = await deleteSavedJobSearch(searchId);
       
       if (result.success) {
-        toast({
-          title: "Search deleted",
+        toast.success("Search deleted", {
           description: "Your saved job search has been deleted",
         });
       } else {
         throw new Error(result.error || "Failed to delete search");
       }
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message || "Something went wrong",
-        variant: "destructive",
       });
     } finally {
       setIsDeleting(false);

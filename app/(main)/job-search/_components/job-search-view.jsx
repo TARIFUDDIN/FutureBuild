@@ -68,41 +68,44 @@ const JobSearchView = ({ session }) => {
   };
 
   // Handle saving the search
-  const handleSaveSearch = async () => {
-    if (!session?.user) {
-      toast.error("Login required", { description: "Please login to save your job search" });
-      return;
-    }
-
+ // Handle saving the search
+const handleSaveSearch = async () => {
+  try {
     if (!jobTitle) {
       toast.error("Job title required", { description: "Please enter a job title to save your search" });
       return;
     }
 
     setIsSaving(true);
-    try {
-      const portals = searchResults.map(result => result.portalId);
-      const result = await saveJobSearch({
-        jobTitle,
-        location,
-        experienceLevel,
-        salaryRange,
-        jobType,
-        portals
-      });
-
-      if (result.success) {
-        toast.success("Search saved", { description: "Your job search has been saved successfully" });
+    const portals = searchResults.map(result => result.portalId);
+    
+    const result = await saveJobSearch({
+      jobTitle,
+      location,
+      experienceLevel,
+      salaryRange,
+      jobType,
+      portals
+    });
+    
+    if (result.success) {
+      toast.success("Search saved", { description: "Your job search has been saved successfully" });
+      // Add this line to redirect after successful save
+      window.location.href = "/job-search/saved-jobs";
+    } else {
+      // Display the specific error message from the server
+      if (result.error === "Authentication required") {
+        toast.error("Login required", { description: "Your session may have expired. Please login again." });
       } else {
         throw new Error(result.error || "Failed to save search");
       }
-    } catch (error) {
-      toast.error("Error", { description: error.message || "Something went wrong" });
-    } finally {
-      setIsSaving(false);
     }
-  };
-
+  } catch (error) {
+    toast.error("Error", { description: error.message || "Something went wrong" });
+  } finally {
+    setIsSaving(false);
+  }
+};
   // Handle job input change and suggestions
   const handleJobInputChange = (e) => {
     const value = e.target.value;
@@ -148,7 +151,6 @@ const JobSearchView = ({ session }) => {
 
   return (
     <div className="space-y-6">
-      {/* Search Section */}
       <Card className="overflow-visible">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -350,8 +352,6 @@ const JobSearchView = ({ session }) => {
           </CardContent>
         </Card>
       )}
-
-      {/* Featured Companies Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

@@ -3,31 +3,33 @@
 import { revalidatePath } from "next/cache";
 import { db } from "../lib/prisma";
 import { checkUser } from "../lib/checkUser";
-
-/**
- * Save a job search for the authenticated user
- */
 export async function saveJobSearch(data) {
   try {
+    console.log("saveJobSearch called with data:", data);
+    
     const user = await checkUser();
-
+    console.log("User from checkUser in saveJobSearch:", user);
+    
     if (!user) {
+      console.log("No authenticated user found in saveJobSearch");
       return {
         success: false,
         error: "Authentication required",
       };
     }
-
+    
+    // Log user ID to verify it exists and is correctly retrieved
+    console.log("User ID for saving job search:", user.id);
+    
     const { jobTitle, location, experienceLevel, salaryRange, jobType, portals } = data;
-
-    // Validate jobTitle
+    
     if (!jobTitle || typeof jobTitle !== "string") {
       return {
         success: false,
         error: "Job title is required and must be a string",
       };
     }
-
+    
     const savedSearch = await db.jobSearch.create({
       data: {
         userId: user.id,
@@ -39,9 +41,12 @@ export async function saveJobSearch(data) {
         portals: portals || [],
       },
     });
-
-    revalidatePath("/job-search/saved");
-
+    
+    console.log("Job search saved successfully:", savedSearch.id);
+    
+    // Fix: Update the revalidation path to match your actual route
+    revalidatePath("/job-search/saved-jobs");
+    
     return {
       success: true,
       savedSearch,
@@ -54,7 +59,6 @@ export async function saveJobSearch(data) {
     };
   }
 }
-
 /**
  * Get saved job searches for the authenticated user
  */
