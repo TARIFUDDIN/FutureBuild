@@ -168,20 +168,17 @@ export const JOB_PORTALS = [
         // Encode job title and location
         const keywords = encodeURIComponent(jobText);
         const locationParam = locationText ? `&locations=${encodeURIComponent(locationText)}` : "";
-  
-        // Handle experience level
         let experienceRangesParam = "";
         let experienceParam = "";
   
         if (experienceText) {
-          // Map experience ranges to Foundit's format
           const experienceMap = {
-            "0-1": "0%7E0", // 0-1 years -> 0~0
-            "1-3": "1%7E3", // 1-3 years -> 1~3
-            "3-5": "3%7E5", // 3-5 years -> 3~5
-            "5-7": "5%7E7", // 5-7 years -> 5~7
-            "7-10": "7%7E10", // 7-10 years -> 7~10
-            "10+": "10%7E99", // 10+ years -> 10~99
+            "0-1": "0%7E0", 
+            "1-3": "1%7E3", 
+            "3-5": "3%7E5", 
+            "5-7": "5%7E7", 
+            "7-10": "7%7E10",
+            "10+": "10%7E99",
           };
   
           experienceRangesParam = experienceMap[experienceText] || "";

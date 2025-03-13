@@ -353,60 +353,61 @@ const handleSaveSearch = async () => {
         </Card>
       )}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BriefcaseIcon className="h-5 w-5" />
-            Featured Companies
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all">
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">All Companies</TabsTrigger>
-              <TabsTrigger value="tech">Tech Giants</TabsTrigger>
-              <TabsTrigger value="indian_tech">Indian Tech</TabsTrigger>
-              <TabsTrigger value="global_corps">Global Corps</TabsTrigger>
-            </TabsList>
+  <CardHeader className="pb-2 sm:pb-4">
+    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+      <BriefcaseIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+      Featured Companies
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <Tabs defaultValue="all" className="w-full">
+      <div className="overflow-x-auto pb-2">
+        <TabsList className="mb-4 w-full sm:w-auto flex whitespace-nowrap">
+          <TabsTrigger value="all" className="text-xs sm:text-sm">All Companies</TabsTrigger>
+          <TabsTrigger value="tech" className="text-xs sm:text-sm">Tech Giants</TabsTrigger>
+          <TabsTrigger value="indian_tech" className="text-xs sm:text-sm">Indian Tech</TabsTrigger>
+          <TabsTrigger value="global_corps" className="text-xs sm:text-sm">Global Corps</TabsTrigger>
+        </TabsList>
+      </div>
 
-            <TabsContent value="all">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {getFeaturedCompanies().map((company) => (
-                  <CompanyCard key={company.name} company={company} />
-                ))}
-              </div>
-            </TabsContent>
+      <TabsContent value="all">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {getFeaturedCompanies().map((company) => (
+            <CompanyCard key={company.name} company={company} />
+          ))}
+        </div>
+      </TabsContent>
 
-            <TabsContent value="tech">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {getFeaturedCompanies("tech").map((company) => (
-                  <CompanyCard key={company.name} company={company} />
-                ))}
-              </div>
-            </TabsContent>
+      {/* Repeat the same pattern for other tabs */}
+      <TabsContent value="tech">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {getFeaturedCompanies("tech").map((company) => (
+            <CompanyCard key={company.name} company={company} />
+          ))}
+        </div>
+      </TabsContent>
 
-            <TabsContent value="indian_tech">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {getFeaturedCompanies("indian_tech").map((company) => (
-                  <CompanyCard key={company.name} company={company} />
-                ))}
-              </div>
-            </TabsContent>
+      <TabsContent value="indian_tech">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {getFeaturedCompanies("indian_tech").map((company) => (
+            <CompanyCard key={company.name} company={company} />
+          ))}
+        </div>
+      </TabsContent>
 
-            <TabsContent value="global_corps">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {getFeaturedCompanies("global_corps").map((company) => (
-                  <CompanyCard key={company.name} company={company} />
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      <TabsContent value="global_corps">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {getFeaturedCompanies("global_corps").map((company) => (
+            <CompanyCard key={company.name} company={company} />
+          ))}
+        </div>
+      </TabsContent>
+    </Tabs>
+  </CardContent>
+</Card>
     </div>
   );
 };
-
-// Company Card component
 const CompanyCard = ({ company }) => {
   return (
     <a
@@ -415,20 +416,20 @@ const CompanyCard = ({ company }) => {
       rel="noopener noreferrer"
       className="no-underline"
     >
-      <div className="border rounded-lg p-4 h-full hover:shadow-md transition-all duration-200 hover:bg-muted/50">
+      <div className="border rounded-lg p-3 sm:p-4 h-full hover:shadow-md transition-all duration-200 hover:bg-muted/50">
         <div className="flex items-start">
           <div
-            className="w-10 h-10 rounded-md flex items-center justify-center text-white mr-3"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-md flex items-center justify-center text-white mr-2 sm:mr-3 flex-shrink-0"
             style={{ backgroundColor: company.color }}
           >
             <i className={company.icon}></i>
           </div>
-          <div>
-            <h3 className="font-medium text-foreground">{company.name}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{company.description}</p>
+          <div className="min-w-0">
+            <h3 className="font-medium text-foreground text-sm sm:text-base">{company.name}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-1">{company.description}</p>
             <div className="flex flex-wrap gap-1 mt-2">
               {company.categories.map((category) => (
-                <Badge key={category} variant="secondary" className="text-xs">
+                <Badge key={category} variant="secondary" className="text-xs py-0 px-1 sm:py-1 sm:px-2">
                   {category.replace("_", " ")}
                 </Badge>
               ))}
@@ -439,5 +440,7 @@ const CompanyCard = ({ company }) => {
     </a>
   );
 };
+
+
 
 export default JobSearchView;
