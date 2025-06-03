@@ -9,7 +9,9 @@ import {
   StarsIcon,
   FileSearch,
   Search,
-
+   Map,
+  BrainCircuit,
+  FolderOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
@@ -38,7 +40,6 @@ export default async function Header() {
           />
         </Link>
 
-       
         <div className="flex items-center space-x-2 md:space-x-4">
           <SignedIn>
             <Link href="/dashboard">
@@ -53,6 +54,22 @@ export default async function Header() {
                 <LayoutDashboard className="h-4 w-4" />
               </Button>
             </Link>
+           
+            {/* External link to FutureBuild Plus */}
+            <a 
+              href="https://futureprep.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <Button
+                className="flex items-center gap-2 bg-white text-slate-800 border border-gray-200" 
+                variant="outline"
+              >
+                <BrainCircuit className="h-4 w-4" />
+                <span className="hidden md:block">FutureBuild Plus</span>
+                <span className="md:hidden">Plus</span>
+              </Button>
+            </a>
 
             {/* Growth Tools Dropdown */}
             <DropdownMenu>
@@ -64,25 +81,23 @@ export default async function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem asChild>
-  <Link href="/job-search" className="flex items-center gap-2">
-    <Search className="h-4 w-4" />
-    Search Jobs
-  </Link>
-</DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                
+                  <Link href="/job-search" className="flex items-center gap-2">
+                    <Search className="h-4 w-4" />
+                    Search Jobs
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/resume" className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Build Resume
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                 
-              <Link href="/resume-analyzer" className="flex items-center gap-2">
+                  <Link href="/resume-analyzer" className="flex items-center gap-2">
                     <FileSearch className="h-4 w-4" />
-                          Analyze Resume
-                       </Link>
+                    Analyze Resume
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link
@@ -91,6 +106,12 @@ export default async function Header() {
                   >
                     <PenBox className="h-4 w-4" />
                     Cover Letter
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/roadmap" className="flex items-center gap-2">
+                    <Map className="h-4 w-4" />
+                    Roadmap-Generator
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

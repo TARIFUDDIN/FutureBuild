@@ -4,14 +4,15 @@ import {
   LineChart, 
   ScrollText, 
   FileSearch, 
-  Route, 
+  FolderOpen, 
   SearchCheck, 
-  Globe
+  Globe,
+  Map
 } from "lucide-react";
 
 export const features = [
   {
-    icon: <Globe className="w-10 h-10 mb-4 text-primary" />, // New icon
+    icon: <Globe className="w-10 h-10 mb-4 text-primary" />, 
     title: "Multi-Portal Job Search",
     description:
       "Search across multiple job portals like LinkedIn, Naukri, Indeed, and more in one place.",
@@ -45,9 +46,9 @@ export const features = [
     description: "Get instant feedback on your resume with AI-driven analysis.",
   },
   {
-    icon: <Route className="w-10 h-10 mb-4 text-primary" />,
-    title: "AI Roadmap Generator",
-    description: "Create a personalized AI learning roadmap based on your goals.",
+    icon: <Map className="w-10 h-10 mb-4 text-primary" />,
+    title: "Smart Learning Roadmaps",
+    description: "Generate personalized, step-by-step learning paths for any technology or skill with interactive progress tracking and specific technology recommendations.",
   },
   {
     icon: <SearchCheck className="w-10 h-10 mb-4 text-primary" />,
