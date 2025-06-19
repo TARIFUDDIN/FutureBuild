@@ -52,7 +52,7 @@ export const features = [
   },
   {
     icon: <SearchCheck className="w-10 h-10 mb-4 text-primary" />,
-    title: "AI Job Searching",
+    title: "AI Job Automation",
     description: "Find the best job opportunities with AI-powered search and recommendations.",
   },
 ];

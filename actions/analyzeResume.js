@@ -98,6 +98,7 @@ const courseRecommendations = {
   ['Adobe XD for Beginners [Free]','https://youtu.be/WEljsc2jorI'],
   ['Adobe XD in Simple Way','https://learnux.io/course/adobe-xd']]
 };
+
 // Resume tips videos
 const resumeVideos = [
   "https://www.youtube.com/watch?v=y8YH0Qbu5h4",
@@ -148,6 +149,7 @@ const recommendedSkills = {
   "UI/UX Development": ['Figma', 'Adobe XD', 'User Research', 'Wireframing', 'Prototyping', 'Interaction Design', 'Visual Design', 'Usability Testing', 'Information Architecture', 'Design Systems', 'Accessibility', 'User Personas', 'Journey Maps', 'A/B Testing']
 };
 
+// EXISTING FUNCTION: General Resume Analysis
 export async function analyzeResume(formData) {
   const { userId } = await auth();
   if (!userId) {
@@ -510,6 +512,7 @@ if (jobField === "Unknown" || maxScore < 2) {
       success: true,
       analysis: {
         id: resumeAnalysis.id,
+        analysisType: "general",
         basicInfo: {
           name: extractedInfo.name,
           email: extractedInfo.email,
@@ -529,7 +532,7 @@ if (jobField === "Unknown" || maxScore < 2) {
         strengthAreas: analysis.strengthAreas || [],
         actionItems: analysis.actionItems || [],
         overallAnalysis: analysis.overallAnalysis,
-        recommendedSkills: missingRecommendedSkills.slice(0, 8), // Limit to 8 most relevant missing skills
+        recommendedSkills: missingRecommendedSkills.slice(0, 8),
         recommendedCourses: fieldCourses,
         resumeVideo: randomResumeVideo,
         interviewVideo: randomInterviewVideo
@@ -538,6 +541,466 @@ if (jobField === "Unknown" || maxScore < 2) {
   } catch (error) {
     console.error("Error analyzing resume:", error);
     return { success: false, error: "Failed to analyze resume: " + error.message };
+  }
+}
+
+// NEW FUNCTION: Job Description-based Resume Analysis
+export async function analyzeResumeWithJobDescription(formData) {
+  const { userId } = await auth();
+  if (!userId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    console.log("Starting job-specific analysis...");
+    
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+
+    console.log("User found:", user.id);
+
+    const resumeText = formData.get('resumeText');
+    const jobDescription = formData.get('jobDescription');
+    
+    console.log("Resume text length:", resumeText?.length || 0);
+    console.log("Job description length:", jobDescription?.length || 0);
+    
+    if (!resumeText || resumeText.trim() === '') {
+      return { success: false, error: "No resume text provided" };
+    }
+    
+    if (!jobDescription || jobDescription.trim() === '') {
+      return { success: false, error: "No job description provided" };
+    }
+
+    console.log("Starting basic info extraction...");
+
+    // Extract basic info from resume
+    const extractionPrompt = `
+      Analyze the following resume text and extract the following information in JSON format:
+      1. "name": Full name of the person
+      2. "email": Email address
+      3. "phone": Phone number (if available)
+      4. "skills": Extract ALL technical skills, programming languages, frameworks, tools, and technologies mentioned in the resume. Be very thorough and detailed. Return as an array of strings with standardized naming.
+      5. "education": Education details as an array of objects with "institution", "degree", "field", "year" (if available)
+      6. "experience": Years of experience if it can be determined directly, or estimate based on work history
+      7. "projects": List of projects as an array of objects with "name", "description", and "technologies" used
+      
+      Resume text:
+      ${resumeText}
+      
+      Return ONLY a clean, valid JSON object with these fields, with no markdown formatting, no code blocks, and no extra text.
+    `;
+
+    let extractedInfo;
+    
+    try {
+      console.log("Calling Gemini for extraction...");
+      const extractionResult = await model.generateContent(extractionPrompt);
+      console.log("Extraction completed");
+      
+      let cleanedResponse = extractionResult.response.text().trim();
+      if (cleanedResponse.startsWith("```json")) {
+        cleanedResponse = cleanedResponse.replace(/```json\n/, "").replace(/```$/, "");
+      } else if (cleanedResponse.startsWith("```")) {
+        cleanedResponse = cleanedResponse.replace(/```\n/, "").replace(/```$/, "");
+      }
+      extractedInfo = JSON.parse(cleanedResponse);
+      console.log("Info extracted successfully");
+    } catch (jsonError) {
+      console.error("Failed to parse extraction JSON:", jsonError);
+      extractedInfo = {
+        name: null, email: null, phone: null, skills: [], education: [], experience: null, projects: []
+      };
+    }
+
+    console.log("Starting job analysis...");
+
+    // Enhanced job description analysis with detailed scoring
+    const jobAnalysisPrompt = `
+      You are an expert ATS (Applicant Tracking System) and hiring manager. Analyze the following resume against the specific job description provided.
+
+      JOB DESCRIPTION:
+      ${jobDescription}
+
+      RESUME:
+      ${resumeText}
+
+      Provide a comprehensive analysis in JSON format with the following structure:
+
+      {
+        "overallScore": <number 0-100>,
+        "detailedScoring": {
+          "skillsMatch": <number 0-100>,
+          "experienceRelevance": <number 0-100>,
+          "educationMatch": <number 0-100>,
+          "keywordOptimization": <number 0-100>,
+          "projectRelevance": <number 0-100>,
+          "formatQuality": <number 0-100>
+        },
+        "jobInfo": {
+          "jobTitle": "<extracted job title>",
+          "company": "<extracted company name>",
+          "location": "<extracted location>",
+          "experienceRequired": "<extracted experience requirement>",
+          "salaryRange": "<extracted salary if mentioned>"
+        },
+        "skillsAnalysis": {
+          "requiredSkillsFound": ["<skills from job description that candidate has>"],
+          "requiredSkillsMissing": ["<critical skills from job description that candidate lacks>"],
+          "preferredSkillsFound": ["<nice-to-have skills that candidate has>"],
+          "preferredSkillsMissing": ["<nice-to-have skills that candidate lacks>"],
+          "additionalSkills": ["<relevant skills candidate has that weren't mentioned in job description>"]
+        },
+        "experienceAnalysis": {
+          "meetsCriteria": <boolean>,
+          "candidateExperience": "<candidate's experience level>",
+          "requiredExperience": "<job's experience requirement>",
+          "relevantExperience": ["<specific relevant experiences from resume>"],
+          "experienceGaps": ["<areas where candidate lacks required experience>"]
+        },
+        "strengthsForThisRole": ["<specific strengths that match this job>"],
+        "weaknessesForThisRole": ["<specific areas where candidate doesn't match this job>"],
+        "improvementSuggestions": [
+          {
+            "area": "<area to improve>",
+            "suggestion": "<specific actionable suggestion>",
+            "priority": "<High/Medium/Low>"
+          }
+        ],
+        "keywordOptimization": {
+          "wellOptimized": ["<keywords/phrases that are well represented>"],
+          "needsImprovement": ["<keywords that should be added or emphasized>"],
+          "atsCompatibility": <number 0-100>
+        },
+        "competitiveAdvantage": ["<what makes this candidate stand out for this specific role>"],
+        "redFlags": ["<potential concerns for this specific role>"],
+        "interviewReadiness": {
+          "score": <number 0-100>,
+          "areasToFocus": ["<areas candidate should prepare for interviews>"],
+          "potentialQuestions": ["<likely interview questions based on gaps>"]
+        },
+        "overallAssessment": "<3-4 sentence executive summary of how well this candidate matches this specific job>"
+      }
+
+      Be extremely thorough and realistic in your analysis. Consider industry standards, role requirements, and current market conditions. Focus specifically on this job match rather than general resume quality.
+
+      Return ONLY a clean, valid JSON object with NO markdown formatting, NO code blocks, and NO extra text.
+    `;
+
+    let jobAnalysis;
+    
+    try {
+      console.log("Calling Gemini for job analysis...");
+      const jobAnalysisResult = await model.generateContent(jobAnalysisPrompt);
+      console.log("Job analysis completed");
+      
+      let cleanedJobResponse = jobAnalysisResult.response.text().trim();
+      if (cleanedJobResponse.startsWith("```json")) {
+        cleanedJobResponse = cleanedJobResponse.replace(/```json\n/, "").replace(/```$/, "");
+      } else if (cleanedJobResponse.startsWith("```")) {
+        cleanedJobResponse = cleanedJobResponse.replace(/```\n/, "").replace(/```$/, "");
+      }
+      jobAnalysis = JSON.parse(cleanedJobResponse);
+      console.log("Job analysis parsed successfully");
+    } catch (jsonError) {
+      console.error("Failed to parse job analysis JSON:", jsonError);
+      // Fallback structure
+      jobAnalysis = {
+        overallScore: 50,
+        detailedScoring: {
+          skillsMatch: 50, experienceRelevance: 50, educationMatch: 50,
+          keywordOptimization: 50, projectRelevance: 50, formatQuality: 50
+        },
+        jobInfo: { jobTitle: "Unknown", company: "Unknown", location: "Unknown", experienceRequired: "Unknown", salaryRange: "Not specified" },
+        skillsAnalysis: {
+          requiredSkillsFound: [], requiredSkillsMissing: [], preferredSkillsFound: [],
+          preferredSkillsMissing: [], additionalSkills: []
+        },
+        experienceAnalysis: {
+          meetsCriteria: false, candidateExperience: "Unknown", requiredExperience: "Unknown",
+          relevantExperience: [], experienceGaps: []
+        },
+        strengthsForThisRole: [], weaknessesForThisRole: [], improvementSuggestions: [],
+        keywordOptimization: { wellOptimized: [], needsImprovement: [], atsCompatibility: 50 },
+        competitiveAdvantage: [], redFlags: [], 
+        interviewReadiness: { score: 50, areasToFocus: [], potentialQuestions: [] },
+        overallAssessment: "Analysis could not be completed properly. Please try again."
+      };
+    }
+
+    console.log("Processing recommendations...");
+
+    // Get relevant courses based on missing skills
+    const missingSkills = [
+      ...(jobAnalysis.skillsAnalysis?.requiredSkillsMissing || []),
+      ...(jobAnalysis.skillsAnalysis?.preferredSkillsMissing || [])
+    ];
+    
+    // Enhanced job field detection based on both job description and analysis
+    let jobField = "Unknown";
+    
+    // Get job title and description for analysis
+    const jobTitle = (jobAnalysis.jobInfo?.jobTitle || "").toLowerCase();
+    const jobDescriptionLower = jobDescription.toLowerCase();
+    const allSkillsFromJob = [
+      ...(jobAnalysis.skillsAnalysis?.requiredSkillsFound || []),
+      ...(jobAnalysis.skillsAnalysis?.requiredSkillsMissing || []),
+      ...(jobAnalysis.skillsAnalysis?.preferredSkillsFound || []),
+      ...(jobAnalysis.skillsAnalysis?.preferredSkillsMissing || [])
+    ].map(skill => skill.toLowerCase()).join(' ');
+    
+    // Combine all text for comprehensive analysis
+    const combinedJobText = `${jobTitle} ${jobDescriptionLower} ${allSkillsFromJob}`;
+    
+    console.log("Job title detected:", jobTitle);
+    console.log("Combined text for field detection:", combinedJobText.substring(0, 200) + "...");
+    
+    // Enhanced field detection with better keywords and scoring
+    const fieldScores = {
+      "Data Science": 0,
+      "Frontend Development": 0,
+      "Full Stack Development": 0,
+      "Java Development": 0,
+      "Android Development": 0,
+      "iOS Development": 0,
+      "UI/UX Development": 0
+    };
+    
+    // Data Science keywords with weights
+    const dataKeywords = [
+      { words: ['data scientist', 'data science', 'machine learning engineer', 'ml engineer', 'ai engineer'], weight: 5 },
+      { words: ['python', 'r programming', 'sql', 'pandas', 'numpy', 'scikit-learn'], weight: 3 },
+      { words: ['tensorflow', 'pytorch', 'keras', 'machine learning', 'deep learning'], weight: 4 },
+      { words: ['statistics', 'statistical analysis', 'data analysis', 'data mining'], weight: 3 },
+      { words: ['jupyter', 'anaconda', 'matplotlib', 'seaborn', 'plotly'], weight: 2 },
+      { words: ['big data', 'hadoop', 'spark', 'etl', 'data warehouse'], weight: 2 }
+    ];
+    
+    // Frontend keywords
+    const frontendKeywords = [
+      { words: ['frontend developer', 'front-end developer', 'ui developer', 'react developer'], weight: 5 },
+      { words: ['react', 'angular', 'vue.js', 'javascript', 'typescript'], weight: 4 },
+      { words: ['html', 'css', 'sass', 'bootstrap', 'tailwind'], weight: 3 },
+      { words: ['webpack', 'vite', 'npm', 'yarn', 'redux'], weight: 2 }
+    ];
+    
+    // Full Stack keywords
+    const fullStackKeywords = [
+      { words: ['full stack developer', 'fullstack developer', 'full-stack'], weight: 5 },
+      { words: ['node.js', 'express', 'mongodb', 'postgresql', 'mysql'], weight: 4 },
+      { words: ['rest api', 'graphql', 'microservices', 'docker'], weight: 3 },
+      { words: ['aws', 'azure', 'cloud', 'deployment'], weight: 2 }
+    ];
+    
+    // Java keywords
+    const javaKeywords = [
+      { words: ['java developer', 'java engineer', 'backend developer'], weight: 5 },
+      { words: ['java', 'spring boot', 'spring framework', 'hibernate'], weight: 4 },
+      { words: ['maven', 'gradle', 'junit', 'microservices'], weight: 3 }
+    ];
+    
+    // Android keywords
+    const androidKeywords = [
+      { words: ['android developer', 'mobile developer', 'android engineer'], weight: 5 },
+      { words: ['kotlin', 'android studio', 'java', 'flutter'], weight: 4 },
+      { words: ['firebase', 'room database', 'retrofit'], weight: 3 }
+    ];
+    
+    // iOS keywords
+    const iosKeywords = [
+      { words: ['ios developer', 'swift developer', 'mobile developer'], weight: 5 },
+      { words: ['swift', 'objective-c', 'xcode', 'swiftui'], weight: 4 },
+      { words: ['core data', 'uikit', 'cocoapods'], weight: 3 }
+    ];
+    
+    // UI/UX keywords
+    const uiuxKeywords = [
+      { words: ['ui designer', 'ux designer', 'product designer', 'graphic designer'], weight: 5 },
+      { words: ['figma', 'adobe xd', 'sketch', 'photoshop'], weight: 4 },
+      { words: ['wireframe', 'prototype', 'user research', 'design system'], weight: 3 }
+    ];
+    
+    // Calculate scores for each field
+    const keywordSets = {
+      "Data Science": dataKeywords,
+      "Frontend Development": frontendKeywords,
+      "Full Stack Development": fullStackKeywords,
+      "Java Development": javaKeywords,
+      "Android Development": androidKeywords,
+      "iOS Development": iosKeywords,
+      "UI/UX Development": uiuxKeywords
+    };
+    
+    // Score each field based on keyword matches
+    Object.entries(keywordSets).forEach(([field, keywords]) => {
+      keywords.forEach(({ words, weight }) => {
+        words.forEach(word => {
+          if (combinedJobText.includes(word)) {
+            fieldScores[field] += weight;
+            console.log(`Found "${word}" for ${field}, adding ${weight} points`);
+          }
+        });
+      });
+    });
+    
+    // Find the field with highest score
+    let maxScore = 0;
+    Object.entries(fieldScores).forEach(([field, score]) => {
+      console.log(`${field}: ${score} points`);
+      if (score > maxScore) {
+        maxScore = score;
+        jobField = field;
+      }
+    });
+    
+    // If no clear winner or very low score, do fallback detection
+    if (maxScore < 3) {
+      console.log("Low confidence in field detection, using fallback logic");
+      
+      if (combinedJobText.includes('data') || combinedJobText.includes('analyst') || 
+          combinedJobText.includes('scientist') || combinedJobText.includes('python') ||
+          combinedJobText.includes('machine learning') || combinedJobText.includes('statistics')) {
+        jobField = "Data Science";
+      } else if (combinedJobText.includes('react') || combinedJobText.includes('frontend') || 
+                 combinedJobText.includes('javascript') || combinedJobText.includes('html')) {
+        jobField = "Frontend Development";
+      } else if (combinedJobText.includes('full stack') || combinedJobText.includes('node') || 
+                 combinedJobText.includes('backend')) {
+        jobField = "Full Stack Development";
+      } else if (combinedJobText.includes('java') && !combinedJobText.includes('javascript')) {
+        jobField = "Java Development";
+      } else if (combinedJobText.includes('android') || combinedJobText.includes('mobile')) {
+        jobField = "Android Development";
+      } else if (combinedJobText.includes('ios') || combinedJobText.includes('swift')) {
+        jobField = "iOS Development";
+      } else if (combinedJobText.includes('design') || combinedJobText.includes('ui') || 
+                 combinedJobText.includes('ux')) {
+        jobField = "UI/UX Development";
+      } else {
+        jobField = "Full Stack Development"; // Default fallback
+      }
+    }
+    
+    console.log(`Final detected job field: ${jobField} (score: ${maxScore})`);
+
+    const fieldCourses = courseRecommendations[jobField] || [];
+    
+    // Get random videos
+    const randomResumeVideo = resumeVideos[Math.floor(Math.random() * resumeVideos.length)];
+    const randomInterviewVideo = interviewVideos[Math.floor(Math.random() * interviewVideos.length)];
+
+    console.log("Saving to database...");
+
+    // Save job-specific analysis to database
+    try {
+      const resumeAnalysis = await db.jobSpecificAnalysis.create({
+        data: {
+          userId: user.id,
+          jobDescription: jobDescription,
+          jobTitle: jobAnalysis.jobInfo?.jobTitle || "Unknown Position",
+          companyName: jobAnalysis.jobInfo?.company || "Unknown Company",
+          overallScore: parseFloat(jobAnalysis.overallScore) || 0,
+          skillsMatch: parseFloat(jobAnalysis.detailedScoring?.skillsMatch) || 0,
+          experienceMatch: parseFloat(jobAnalysis.detailedScoring?.experienceRelevance) || 0,
+          educationMatch: parseFloat(jobAnalysis.detailedScoring?.educationMatch) || 0,
+          keywordOptimization: parseFloat(jobAnalysis.keywordOptimization?.atsCompatibility) || 0,
+          requiredSkillsFound: jobAnalysis.skillsAnalysis?.requiredSkillsFound || [],
+          requiredSkillsMissing: jobAnalysis.skillsAnalysis?.requiredSkillsMissing || [],
+          preferredSkillsFound: jobAnalysis.skillsAnalysis?.preferredSkillsFound || [],
+          preferredSkillsMissing: jobAnalysis.skillsAnalysis?.preferredSkillsMissing || [],
+          additionalSkills: jobAnalysis.skillsAnalysis?.additionalSkills || [],
+          experienceAlignment: jobAnalysis.experienceAnalysis?.meetsCriteria || false,
+          candidateExperience: jobAnalysis.experienceAnalysis?.candidateExperience || "Unknown",
+          requiredExperience: jobAnalysis.experienceAnalysis?.requiredExperience || "Unknown",
+          relevantExperience: jobAnalysis.experienceAnalysis?.relevantExperience || [],
+          experienceGaps: jobAnalysis.experienceAnalysis?.experienceGaps || [],
+          strengthsForRole: jobAnalysis.strengthsForThisRole || [],
+          weaknessesForRole: jobAnalysis.weaknessesForThisRole || [],
+          competitiveAdvantage: jobAnalysis.competitiveAdvantage || [],
+          redFlags: jobAnalysis.redFlags || [],
+          recommendedImprovements: jobAnalysis.improvementSuggestions?.map(imp => imp.suggestion) || [],
+          missingSkills: jobAnalysis.skillsAnalysis?.requiredSkillsMissing || [],
+          interviewPreparation: jobAnalysis.interviewReadiness?.areasToFocus || [],
+          overallAssessment: jobAnalysis.overallAssessment || "No assessment available",
+          hiringRecommendation: jobAnalysis.overallScore >= 80 ? "Strong Match" : 
+                               jobAnalysis.overallScore >= 60 ? "Good Match" : 
+                               jobAnalysis.overallScore >= 40 ? "Weak Match" : "Not Suitable"
+        }
+      });
+
+      console.log("Analysis saved successfully:", resumeAnalysis.id);
+    } catch (dbError) {
+      console.error("Database save error:", dbError);
+      console.error("Full error details:", JSON.stringify(dbError, null, 2));
+      
+      // Try with only the required fields from your schema
+      try {
+        console.log("Trying to save with minimal fields...");
+        const resumeAnalysis = await db.jobSpecificAnalysis.create({
+          data: {
+            userId: user.id,
+            jobDescription: jobDescription,
+            jobTitle: jobAnalysis.jobInfo?.jobTitle || "Unknown Position", 
+            companyName: jobAnalysis.jobInfo?.company || "Unknown Company",
+            overallScore: parseFloat(jobAnalysis.overallScore) || 0,
+            skillsMatch: parseFloat(jobAnalysis.detailedScoring?.skillsMatch) || 0,
+            experienceMatch: parseFloat(jobAnalysis.detailedScoring?.experienceRelevance) || 0,
+            missingSkills: jobAnalysis.skillsAnalysis?.requiredSkillsMissing || [],
+            recommendedImprovements: jobAnalysis.improvementSuggestions?.map(imp => imp.suggestion) || [],
+            strengthsForRole: jobAnalysis.strengthsForThisRole || [],
+            weaknessesForRole: jobAnalysis.weaknessesForThisRole || []
+          }
+        });
+        console.log("Minimal save successful:", resumeAnalysis.id);
+      } catch (minimalError) {
+        console.error("Even minimal save failed:", minimalError);
+        console.log("Continuing without database save...");
+      }
+    }
+
+    return {
+      success: true,
+      analysis: {
+        id: Math.random().toString(36).substr(2, 9), // Generate temporary ID if DB save failed
+        analysisType: "job-specific",
+        basicInfo: {
+          name: extractedInfo.name,
+          email: extractedInfo.email,
+          phone: extractedInfo.phone
+        },
+        skills: extractedInfo.skills,
+        projects: extractedInfo.projects,
+        education: extractedInfo.education,
+        jobInfo: jobAnalysis.jobInfo,
+        overallScore: jobAnalysis.overallScore,
+        detailedScoring: jobAnalysis.detailedScoring,
+        skillsAnalysis: jobAnalysis.skillsAnalysis,
+        experienceAnalysis: jobAnalysis.experienceAnalysis,
+        strengthsForThisRole: jobAnalysis.strengthsForThisRole,
+        weaknessesForThisRole: jobAnalysis.weaknessesForThisRole,
+        improvementSuggestions: jobAnalysis.improvementSuggestions,
+        keywordOptimization: jobAnalysis.keywordOptimization,
+        competitiveAdvantage: jobAnalysis.competitiveAdvantage,
+        redFlags: jobAnalysis.redFlags,
+        interviewReadiness: jobAnalysis.interviewReadiness,
+        overallAssessment: jobAnalysis.overallAssessment,
+        recommendedCourses: fieldCourses,
+        resumeVideo: randomResumeVideo,
+        interviewVideo: randomInterviewVideo
+      }
+    };
+  } catch (error) {
+    console.error("Error analyzing resume with job description:", error || "Unknown error");
+    return { 
+      success: false, 
+      error: "Failed to analyze resume: " + (error?.message || "Unknown error occurred")
+    };
   }
 }
 
@@ -569,6 +1032,37 @@ export async function getResumeAnalyses() {
   } catch (error) {
     console.error("Error fetching resume analyses:", error);
     return { success: false, error: "Failed to fetch resume analyses" };
+  }
+}
+
+export async function getJobSpecificAnalyses() {
+  const { userId } = await auth();
+  if (!userId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+
+    const analyses = await db.jobSpecificAnalysis.findMany({
+      where: {
+        userId: user.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return { success: true, analyses };
+  } catch (error) {
+    console.error("Error fetching job-specific analyses:", error);
+    return { success: false, error: "Failed to fetch job-specific analyses" };
   }
 }
 

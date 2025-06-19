@@ -1,9 +1,10 @@
+/* Updated global.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', 'SF Pro Display', Arial, sans-serif;
 }
 
 @layer base {
@@ -14,51 +15,73 @@ body {
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --primary: 258 90% 66%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 258 90% 66%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --ring: 258 90% 66%;
+    --chart-1: 258 90% 66%;
+    --chart-2: 280 65% 60%;
+    --chart-3: 300 80% 55%;
+    --chart-4: 320 75% 65%;
+    --chart-5: 340 85% 70%;
     --radius: 0.5rem;
   }
+  
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    /* Main background - Proper purple, not too dark */
+    --background: 258 65% 12%;
+    --foreground: 280 25% 98%;
+    
+    /* Cards - Lighter purple with good contrast */
+    --card: 258 55% 16%;
+    --card-foreground: 280 20% 97%;
+    
+    /* Popovers */
+    --popover: 258 55% 18%;
+    --popover-foreground: 280 20% 97%;
+    
+    /* Primary - Bright vibrant purple */
+    --primary: 270 85% 75%;
+    --primary-foreground: 258 65% 15%;
+    
+    /* Secondary - Medium purple */
+    --secondary: 258 45% 25%;
+    --secondary-foreground: 280 20% 97%;
+    
+    /* Muted elements */
+    --muted: 258 40% 20%;
+    --muted-foreground: 280 15% 80%;
+    
+    /* Accent - Vibrant violet */
+    --accent: 258 45% 30%;
+    --accent-foreground: 280 20% 97%;
+    
+    /* Destructive */
+    --destructive: 0 75% 65%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    
+    /* Borders and inputs */
+    --border: 258 35% 35%;
+    --input: 258 40% 25%;
+    
+    /* Focus rings */
+    --ring: 270 85% 75%;
+    
+    /* Charts - Purple/violet palette */
+    --chart-1: 270 85% 75%;
+    --chart-2: 285 80% 65%;
+    --chart-3: 300 75% 60%;
+    --chart-4: 315 80% 65%;
+    --chart-5: 330 85% 70%;
   }
 }
 
@@ -66,47 +89,89 @@ body {
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
+    /* Beautiful purple gradient background */
+    background: linear-gradient(135deg, 
+      hsl(258, 65%, 12%) 0%, 
+      hsl(268, 60%, 14%) 25%, 
+      hsl(278, 55%, 16%) 50%, 
+      hsl(288, 60%, 14%) 75%, 
+      hsl(258, 65%, 12%) 100%);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl sm:text-5xl md:text-6xl font-extrabold;
+  }
+
+  h2 {
+    @apply text-3xl sm:text-4xl font-extrabold;
   }
 }
 
 @layer utilities {
   .gradient {
-    @apply bg-gradient-to-b from-gray-400 via-gray-200 to-gray-600;
+    @apply bg-gradient-to-b from-purple-500 via-violet-500 to-purple-600;
   }
+  
   .gradient-title {
-    @apply gradient font-extrabold tracking-tighter text-transparent bg-clip-text pb-2 pr-2;
+    @apply gradient font-black tracking-tighter text-transparent bg-clip-text pb-2 pr-2;
+  }
+  
+  /* Purple-themed gradients */
+  .purple-gradient {
+    @apply bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700;
+  }
+  
+  .purple-gradient-subtle {
+    @apply bg-gradient-to-br from-purple-100 via-violet-100 to-indigo-100 dark:from-purple-900/40 dark:via-violet-900/40 dark:to-indigo-900/40;
+  }
+  
+  /* Enhanced card styles for purple theme */
+  .card-purple {
+    background: linear-gradient(135deg, 
+      hsl(258, 55%, 18%) 0%, 
+      hsl(268, 50%, 20%) 100%);
+    border: 1px solid hsl(258, 35%, 38%);
+    backdrop-filter: blur(10px);
+    @apply shadow-xl shadow-purple-900/10;
+  }
+  
+  /* Purple button variants */
+  .btn-purple-primary {
+    @apply bg-gradient-to-r from-purple-700 to-violet-700 hover:from-purple-800 hover:to-violet-800 text-white font-bold;
+  }
+  
+  .btn-purple-secondary {
+    @apply bg-gradient-to-r from-purple-100 to-violet-100 hover:from-purple-200 hover:to-violet-200 text-purple-900 border border-purple-300 font-bold;
+  }
+
+  /* Professional text styles */
+  .heading-gradient {
+    @apply bg-gradient-to-r from-primary to-purple-700 text-transparent bg-clip-text;
+  }
+
+  .text-bold {
+    @apply font-bold tracking-tight;
   }
 }
 
-.hero-image-wrapper {
-  perspective: 1000px;
-}
-
-.hero-image {
-  /* transform: rotateX(20deg) scale(0.9) translateY(-50); */
-  transform: rotateX(20deg) scale(1);
-  transition: transform 0.5s ease-out;
-  will-change: transform;
-}
-
-.hero-image.scrolled {
-  transform: rotateX(0deg) scale(1) translateY(40px);
-}
-
+/* Updated grid background for purple theme */
 .grid-background {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.1) 1px,
-      transparent 1px
-    ),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background: 
+    linear-gradient(to right, rgba(147, 51, 234, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(147, 51, 234, 0.1) 1px, transparent 1px);
   background-size: 50px 50px;
   pointer-events: none;
   z-index: -1;
@@ -119,5 +184,159 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, transparent, rgba(0, 0, 0, 0.9));
+  background: radial-gradient(
+    circle at center,
+    transparent 0%,
+    rgba(147, 51, 234, 0.15) 50%,
+    rgba(109, 40, 217, 0.3) 100%
+  );
+}
+
+/* Existing hero and animation styles with purple enhancements */
+.hero-image-wrapper {
+  perspective: 1000px;
+}
+
+.hero-image {
+  transform: rotateX(15deg) scale(1);
+  transition: transform 0.6s ease-out;
+  will-change: transform;
+  filter: drop-shadow(0 25px 45px rgba(147, 51, 234, 0.5));
+}
+
+.hero-image.scrolled {
+  transform: rotateX(0deg) scale(1.02) translateY(20px);
+}
+
+/* Enhanced scrollbar for purple theme */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(258, 55%, 16%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, hsl(270, 85%, 75%), hsl(285, 80%, 70%));
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(270, 85%, 80%), hsl(285, 80%, 75%));
+}
+
+/* Purple-themed selection */
+::selection {
+  background: hsl(270, 85%, 75%);
+  color: hsl(258, 65%, 12%);
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Additional purple theme enhancements */
+.text-primary {
+  color: hsl(270, 85%, 75%) !important;
+}
+
+.bg-primary {
+  background-color: hsl(270, 85%, 75%) !important;
+}
+
+/* Glowing effects for interactive elements */
+.glow-purple {
+  box-shadow: 0 0 25px rgba(147, 51, 234, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
+.glow-purple:hover {
+  box-shadow: 0 0 35px rgba(147, 51, 234, 0.7);
+}
+
+/* Purple-themed focus states */
+.focus-purple:focus {
+  outline: none;
+  ring: 3px;
+  ring-color: hsl(270, 85%, 75%);
+  ring-opacity: 0.7;
+}
+
+/* Animated purple background for special sections */
+@keyframes purpleWave {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animated-purple-bg {
+  background: linear-gradient(
+    270deg,
+    hsl(258, 65%, 15%),
+    hsl(268, 60%, 18%),
+    hsl(278, 55%, 20%),
+    hsl(288, 60%, 18%),
+    hsl(258, 65%, 15%)
+  );
+  background-size: 400% 400%;
+  animation: purpleWave 12s ease infinite;
+}
+
+/* Card and button enhancements */
+.card {
+  @apply border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md transition-all duration-300;
+}
+
+.card:hover {
+  @apply shadow-lg;
+}
+
+.card-header {
+  @apply p-6 border-b border-gray-200 dark:border-gray-700;
+}
+
+.card-title {
+  @apply text-xl font-bold mb-2;
+}
+
+.card-description {
+  @apply text-gray-600 dark:text-gray-300;
+}
+
+.card-content {
+  @apply p-6;
+}
+
+.btn {
+  @apply rounded-md px-4 py-2 font-bold transition-all duration-200;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:opacity-90;
+}
+
+.btn-outline {
+  @apply border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800;
+}
+
+/* Professional table styles */
+table {
+  @apply w-full border-collapse;
+}
+
+table th {
+  @apply font-bold text-left p-4 bg-gray-50 dark:bg-gray-800;
+}
+
+table td {
+  @apply p-4 border-t border-gray-200 dark:border-gray-700;
+}
+
+table tr:hover {
+  @apply bg-gray-50 dark:bg-gray-800/50;
 }

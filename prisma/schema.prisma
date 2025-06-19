@@ -1,4 +1,4 @@
-// This is your Prisma schema file,
+// This is your complete Prisma schema file with AI Job Automation features
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
@@ -27,16 +27,24 @@ model User {
   // Profile fields
   bio           String?
   experience    Int?      // Years of experience
-  
+
   // Relations
   skills        String[]  // Array of skills
   assessments   Assessment[]
   resume        Resume?
   coverLetter   CoverLetter[]
-   resumeAnalyses ResumeAnalysis[]
-   roadmaps      Roadmap[]
-   JobSearch     JobSearch[]
-   JobPortalClick JobPortalClick[]
+  resumeAnalyses ResumeAnalysis[]
+  jobSpecificAnalyses JobSpecificAnalysis[]  // Job-specific resume analyses
+  roadmaps      Roadmap[]
+  JobSearch     JobSearch[]
+  JobPortalClick JobPortalClick[]
+
+  // NEW: AI Job Automation Relations
+  jobSearchSessions   JobSearchSession[]
+  jobApplications     JobApplication[]
+  generatedResumes    GeneratedResume[]
+  emailTemplates      EmailTemplate[]
+  applicationMetrics  ApplicationMetrics[]
 }
 
 model Assessment {
@@ -83,31 +91,32 @@ model CoverLetter {
 model IndustryInsight {
   id            String    @id @default(cuid())
   industry      String    @unique  // The industry this data belongs to (e.g., "tech-software-development")
-  
+
   // Users in this industry
   users         User[]
-  
+
   // Salary data
   salaryRanges  Json[]    // Array of { role: string, min: float, max: float, median: float, location: string? }
-  
+
   // Industry trends
   growthRate    Float     // Industry growth rate
   demandLevel   String    // "High", "Medium", "Low"
   topSkills     String[]  // Most in-demand skills
-  
+
   // Market conditions
   marketOutlook String    // "Positive", "Neutral", "Negative"
   keyTrends     String[]  // Array of current industry trends
-  
+
   // Learning suggestions
   recommendedSkills String[]  // Skills recommended for the industry
-  
+
   lastUpdated   DateTime  @default(now())
   nextUpdate    DateTime  // Scheduled update time
 
   @@index([industry])
 }
-// Add this to your Prisma schema file
+
+// Existing general resume analysis model
 model ResumeAnalysis {
   id                 String    @id @default(cuid())
   userId             String
@@ -123,7 +132,62 @@ model ResumeAnalysis {
 
   @@index([userId])
 }
-// prisma/schema.prisma (add to your existing schema)
+
+// Job-specific resume analysis model
+model JobSpecificAnalysis {
+  id                      String    @id @default(cuid())
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id])
+
+  // Job Information
+  jobDescription          String    @db.Text  // The full job description
+  jobTitle                String    // Extracted or provided job title
+  companyName             String    // Extracted or provided company name
+
+  // Scoring (0-100 scale)
+  overallScore            Float     // Overall match score
+  skillsMatch             Float     // How well skills match
+  experienceMatch         Float     // How well experience matches
+  educationMatch          Float?    // How well education matches
+  keywordOptimization     Float?    // ATS keyword optimization score
+
+  // Skills Analysis
+  requiredSkillsFound     String[]  // Required skills candidate has
+  requiredSkillsMissing   String[]  // Required skills candidate lacks
+  preferredSkillsFound    String[]  // Nice-to-have skills candidate has
+  preferredSkillsMissing  String[]  // Nice-to-have skills candidate lacks
+  additionalSkills        String[]  // Relevant skills not mentioned in job
+
+  // Experience Analysis
+  experienceAlignment     Boolean   // Does experience meet requirements
+  candidateExperience     String?   // Candidate's experience level
+  requiredExperience      String?   // Job's experience requirement
+  relevantExperience      String[]  // Specific relevant experiences
+  experienceGaps          String[]  // Areas lacking experience
+
+  // Strengths and Weaknesses for this specific role
+  strengthsForRole        String[]  // Specific strengths for this job
+  weaknessesForRole       String[]  // Specific weaknesses for this job
+  competitiveAdvantage    String[]  // What makes candidate stand out
+  redFlags                String[]  // Potential concerns
+
+  // Recommendations
+  recommendedImprovements String[]  // Specific improvement suggestions
+  missingSkills           String[]  // Skills to acquire
+  interviewPreparation    String[]  // Areas to focus for interview prep
+
+  // Assessment
+  overallAssessment       String    @db.Text // Executive summary
+  hiringRecommendation    String?   // Strong Match/Good Match/Weak Match/Not Suitable
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([jobTitle])
+  @@index([companyName])
+}
+
 model Roadmap {
   id          String    @id @default(cuid())
   userId      String
@@ -135,8 +199,8 @@ model Roadmap {
 
   @@index([userId])
 }
-// prisma/schema.prisma (add these models to your existing schema)
 
+// Original Job Search Models
 model JobSearch {
   id             String   @id @default(cuid())
   userId         String
@@ -147,7 +211,7 @@ model JobSearch {
   jobType        String?
   portals        String[] // Store portal IDs that were included in search
   createdAt      DateTime @default(now())
-  
+
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -160,9 +224,356 @@ model JobPortalClick {
   jobTitle       String
   location       String?
   createdAt      DateTime @default(now())
-  
+
   user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([portalId])
+}
+
+// ====================================
+// NEW AI JOB AUTOMATION MODELS
+// ====================================
+
+// AI Job Search Sessions
+model JobSearchSession {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  sessionName   String?   // User can name their search session
+  searchQuery   String    @db.Text // Original natural language query
+  jobTitle      String    // Extracted job title
+  location      String?   // Extracted location
+  experience    String?   // Extracted experience level
+  skills        String[]  // Extracted skills array
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  jobs          ScrapedJob[]
+  applications  JobApplication[]
+
+  @@index([userId])
+}
+
+model ScrapedJob {
+  id                    String    @id @default(cuid())
+  sessionId             String
+  session               JobSearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  // Job Details
+  externalJobId         String    // LinkedIn job ID or other platform ID
+  title                 String
+  company               String
+  companyLinkedinUrl    String?
+  companyLogo           String?
+  companyWebsite        String?
+  companyEmployeesCount String?
+  companyDescription    String?   @db.Text
+  location              String?
+  salaryInfo            String?
+  postedAt              String?
+  benefits              String[]
+  descriptionHtml       String?   @db.Text
+  descriptionText       String?   @db.Text
+  seniorityLevel        String?
+  employmentType        String?
+  jobFunction           String?
+  industries            String[]
+  applicantsCount       String?
+  applyUrl              String?
+  
+  // ADD THIS LINE HERE:
+  source                String?   // Job source (Adzuna, Arbeitnow, etc.)
+  remote                Boolean   @default(false)  // ADD THIS LINE TOO
+  
+  // Job Poster Info
+  jobPosterName         String?
+  jobPosterTitle        String?
+  jobPosterPhoto        String?
+  jobPosterProfileUrl   String?
+  
+  // AI Analysis
+  aiMatchScore          Float?    // AI calculated match score
+  keySkillsMatch        String[]  // Matching skills found
+  experienceMatch       Boolean   @default(false)
+  salaryMatch           Boolean   @default(false)
+  
+  // Status
+  status                JobStatus @default(DISCOVERED)
+  priority              JobPriority @default(MEDIUM)
+  notes                 String?   @db.Text
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  applications          JobApplication[]
+  contactAttempts       ContactAttempt[]
+
+  @@index([sessionId])
+  @@index([company])
+  @@index([status])
+  @@unique([externalJobId, sessionId])
+}
+// Job Applications with automation
+model JobApplication {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  sessionId         String
+  session           JobSearchSession @relation(fields: [sessionId], references: [id])
+  jobId             String
+  job               ScrapedJob @relation(fields: [jobId], references: [id])
+  
+  // Application Details
+  status            ApplicationStatus @default(PENDING)
+  appliedAt         DateTime?
+  resumeVersion     String?   // Which resume version was used
+  coverLetterUsed   String?   @db.Text
+  customResume      String?   @db.Text // Job-specific resume content
+  
+  // Email Details
+  hrEmail           String?
+  emailSubject      String?
+  emailContent      String?   @db.Text
+  emailSentAt       DateTime?
+  emailDelivered    Boolean   @default(false)
+  emailOpened       Boolean   @default(false)
+  emailReplied      Boolean   @default(false)
+  
+  // Follow-up
+  followUpScheduled DateTime?
+  followUpCount     Int       @default(0)
+  lastFollowUp      DateTime?
+  
+  // Tracking
+  applicationUrl    String?   // Direct application link
+  referenceNumber   String?   // Company's reference number
+  
+  // Response tracking
+  responseReceived  Boolean   @default(false)
+  responseDate      DateTime?
+  responseType      ResponseType?
+  interviewScheduled Boolean   @default(false)
+  interviewDate     DateTime?
+  interviewType     String?   // Phone, Video, In-person
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  generatedResumes  GeneratedResume[]
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([status])
+}
+
+// Contact Attempts (Email finding)
+model ContactAttempt {
+  id                String    @id @default(cuid())
+  jobId             String
+  job               ScrapedJob @relation(fields: [jobId], references: [id])
+  
+  // Contact Source
+  source            ContactSource // EMAIL_FROM_JOB, APOLLO_HR, APOLLO_EXECUTIVE, PERPLEXITY
+  contactType       ContactType   // HR, HIRING_MANAGER, RECRUITER, EXECUTIVE
+  
+  // Contact Details
+  contactName       String?
+  contactTitle      String?
+  contactEmail      String?
+  contactLinkedin   String?
+  contactPhone      String?
+  
+  // Success metrics
+  emailFound        Boolean   @default(false)
+  emailVerified     Boolean   @default(false)
+  emailDelivered    Boolean   @default(false)
+  emailBounced      Boolean   @default(false)
+  
+  // Apollo specific
+  apolloPersonId    String?
+  apolloCreditsUsed Int       @default(0)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([jobId])
+  @@index([source])
+}
+
+// AI Generated Resumes
+model GeneratedResume {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  applicationId     String?
+  application       JobApplication? @relation(fields: [applicationId], references: [id])
+  
+  // Resume Details
+  resumeName        String
+  jobTitle          String    // What job this resume is tailored for
+  company           String    // What company this resume is tailored for
+  jsonContent       String    @db.Text // JSON Resume format
+  pdfUrl            String?   // Generated PDF URL
+  htmlContent       String?   @db.Text // Generated HTML
+  
+  // AI Metrics
+  atsScore          Float?
+  keywordMatch      Float?
+  tailoringScore    Float?    // How well tailored to the job
+  
+  // Generation metadata
+  baseResumeId      String?   // Reference to base resume used
+  aiModel           String?   // Which AI model generated this
+  generationTime    Int?      // Time taken to generate (seconds)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([jobTitle])
+}
+
+// Email Templates
+model EmailTemplate {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  
+  name          String
+  subject       String
+  content       String    @db.Text
+  templateType  EmailTemplateType
+  industry      String?   // Tech, Finance, etc.
+  jobLevel      String?   // Entry, Mid, Senior
+  
+  // Usage stats
+  usageCount    Int       @default(0)
+  successRate   Float?    // Response rate for this template
+  
+  isDefault     Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([templateType])
+}
+
+// Analytics and Insights
+model ApplicationMetrics {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  
+  // Time period
+  periodStart       DateTime
+  periodEnd         DateTime
+  
+  // Application stats
+  totalApplications Int       @default(0)
+  emailsSent        Int       @default(0)
+  emailsDelivered   Int       @default(0)
+  emailsOpened      Int       @default(0)
+  emailsReplied     Int       @default(0)
+  interviewsScheduled Int     @default(0)
+  offersReceived    Int       @default(0)
+  
+  // Success rates
+  responseRate      Float?
+  interviewRate     Float?
+  offerRate         Float?
+  
+  // AI Performance
+  avgAtsScore       Float?
+  avgMatchScore     Float?
+  
+  // Most successful
+  bestCompany       String?
+  bestJobTitle      String?
+  bestEmailTemplate String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([periodStart])
+}
+
+// ====================================
+// ENUMS
+// ====================================
+
+enum JobStatus {
+  DISCOVERED
+  ANALYZING
+  MATCHED
+  APPLIED
+  REJECTED
+  INTERVIEW_SCHEDULED
+  INTERVIEWED
+  OFFER_RECEIVED
+  OFFER_ACCEPTED
+  OFFER_DECLINED
+  ARCHIVED
+}
+
+enum JobPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ApplicationStatus {
+  PENDING
+  RESUME_GENERATING
+  EMAIL_FINDING
+  EMAIL_SENDING
+  SENT
+  DELIVERED
+  OPENED
+  REPLIED
+  REJECTED
+  INTERVIEW_REQUESTED
+  COMPLETED
+  FAILED
+}
+
+enum ResponseType {
+  POSITIVE
+  NEGATIVE
+  NEUTRAL
+  INTERVIEW_REQUEST
+  REJECTION
+  AUTO_REPLY
+}
+
+enum ContactSource {
+  EMAIL_FROM_JOB
+  APOLLO_HR
+  APOLLO_EXECUTIVE
+  PERPLEXITY
+  MANUAL
+}
+
+enum ContactType {
+  HR
+  HIRING_MANAGER
+  RECRUITER
+  EXECUTIVE
+  GENERIC
+}
+
+enum EmailTemplateType {
+  COLD_OUTREACH
+  FOLLOW_UP
+  THANK_YOU
+  INTERVIEW_CONFIRMATION
+  SALARY_NEGOTIATION
 }
