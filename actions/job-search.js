@@ -2,19 +2,30 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "../lib/prisma";
-import { checkUser } from "../lib/checkUser";
+import { auth } from "@clerk/nextjs/server";
+
 export async function saveJobSearch(data) {
   try {
     console.log("saveJobSearch called with data:", data);
     
-    const user = await checkUser();
-    console.log("User from checkUser in saveJobSearch:", user);
-    
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       console.log("No authenticated user found in saveJobSearch");
       return {
         success: false,
         error: "Authentication required",
+      };
+    }
+
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!user) {
+      console.log("User not found in database");
+      return {
+        success: false,
+        error: "User not found",
       };
     }
     
@@ -59,17 +70,28 @@ export async function saveJobSearch(data) {
     };
   }
 }
+
 /**
  * Get saved job searches for the authenticated user
  */
 export async function getSavedJobSearches() {
   try {
-    const user = await checkUser();
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        error: "Authentication required",
+      };
+    }
+
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
 
     if (!user) {
       return {
         success: false,
-        error: "Authentication required",
+        error: "User not found",
       };
     }
 
@@ -100,12 +122,22 @@ export async function getSavedJobSearches() {
  */
 export async function deleteSavedJobSearch(searchId) {
   try {
-    const user = await checkUser();
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        error: "Authentication required",
+      };
+    }
+
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
 
     if (!user) {
       return {
         success: false,
-        error: "Authentication required",
+        error: "User not found",
       };
     }
 
@@ -149,7 +181,7 @@ export async function deleteSavedJobSearch(searchId) {
  */
 export async function trackJobPortalClick(data) {
   try {
-    const user = await checkUser();
+    const { userId } = await auth();
     const { portalId, jobTitle, location } = data;
 
     if (!portalId || !jobTitle || typeof jobTitle !== "string") {
@@ -159,10 +191,20 @@ export async function trackJobPortalClick(data) {
       };
     }
 
+    let dbUserId = null;
+    
+    // If user is authenticated, get their database ID
+    if (userId) {
+      const user = await db.user.findUnique({
+        where: { clerkUserId: userId },
+      });
+      dbUserId = user?.id || null;
+    }
+
     // Create analytics record
     await db.jobPortalClick.create({
       data: {
-        userId: user ? user.id : null, // Allow anonymous tracking
+        userId: dbUserId, // Allow anonymous tracking with null
         portalId,
         jobTitle,
         location: location || null,

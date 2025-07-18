@@ -4,6 +4,7 @@ import { db } from "../lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { generateAIInsights } from "./dashboard";
 import { revalidatePath } from "next/cache";
+
 export async function updateUser(data) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -64,30 +65,53 @@ export async function updateUser(data) {
 }
 
 export async function getUserOnboardingStatus() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
-
   try {
+    console.log("🔍 getUserOnboardingStatus: Starting auth check...");
+    const { userId } = await auth();
+    console.log("🔍 getUserOnboardingStatus: UserId from auth:", userId ? "✅ Found" : "❌ Missing");
+    
+    if (!userId) {
+      console.log("❌ getUserOnboardingStatus: No userId, returning auth required");
+      return {
+        isOnboarded: false,
+        error: "Authentication required"
+      };
+    }
+
+    console.log("🔍 getUserOnboardingStatus: Querying database for user...");
     const user = await db.user.findUnique({
-      where: {
-        clerkUserId: userId,
-      },
+      where: { clerkUserId: userId },
       select: {
+        id: true,
         industry: true,
-      },
+        name: true,
+        email: true
+      }
     });
 
+    console.log("🔍 getUserOnboardingStatus: User from DB:", user ? "✅ Found" : "❌ Missing");
+    console.log("🔍 getUserOnboardingStatus: User industry:", user?.industry || "❌ No industry");
+
+    if (!user) {
+      console.log("❌ getUserOnboardingStatus: User not found in database");
+      return {
+        isOnboarded: false,
+        error: "User not found"
+      };
+    }
+
+    const isOnboarded = !!user.industry;
+    console.log("🔍 getUserOnboardingStatus: Final result - isOnboarded:", isOnboarded);
+
     return {
-      isOnboarded: !!user?.industry,
+      isOnboarded,
+      user: user.industry ? user : null
     };
   } catch (error) {
-    console.error("Error checking onboarding status:", error);
-    throw new Error("Failed to check onboarding status");
+    console.error("💥 getUserOnboardingStatus: Error checking onboarding status:", error);
+    return {
+      isOnboarded: false,
+      error: "Failed to check onboarding status"
+    };
   }
 }

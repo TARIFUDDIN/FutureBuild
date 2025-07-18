@@ -9,6 +9,18 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // Course recommendations based on field
 const courseRecommendations = {
+  "DevOps": [
+  ['Complete DevOps Bootcamp [Free]', 'https://youtu.be/Ou9j73aWgyE?si=Wa76e-xfoEnnGbl3'],
+  ['Docker Complete Tutorial [Free]', 'https://youtu.be/3c-iBn73dDE?si=yfN9QvY2QczAucHd'],
+  ['Kubernetes Tutorial [Free]', 'https://youtu.be/X48VuDVv0do?si=XnCdY-_o3114V_nx'],
+  ['Jenkins CI/CD Pipeline [Free]', 'https://youtu.be/NVaP8qtLm6Q?si=RmDaHnKQ520eWbWj'],
+  ['Terraform Infrastructure as Code [Free]', 'https://youtu.be/4JYtAf4M88Y?si=CcyCMw_wgBH-gTd9'],
+  ['AWS Complete Tutorial [Free]', 'https://youtu.be/rKNSc8RrwxA?si=o4Q1FclmWXgtrmHs'],
+  ['Prometheus & Grafana Monitoring [Free]', 'https://youtu.be/ddZjhv66o_o?si=XZvEs1OE7iSUFKWb'],
+  ['DevOps Engineering on AWS by AWS', 'https://aws.amazon.com/training/classroom/devops-engineering-on-aws/'],
+  ['Google Cloud DevOps Engineer Professional Certificate', 'https://www.coursera.org/professional-certificates/google-cloud-devops-engineer'],
+  ['Microsoft Azure DevOps Engineer Expert', 'https://docs.microsoft.com/en-us/learn/certifications/devops-engineer/']
+],
   "Data Science":[
   ['Machine Learning Crash Course by Google [Free]', 'https://developers.google.com/machine-learning/crash-course'],
   ['Machine Learning A-Z by Udemy','https://www.udemy.com/course/machinelearning/'],
@@ -117,6 +129,7 @@ const interviewVideos = [
 
 // Skills keyword mapping
 const skillKeywords = {
+  devops: ['devops', 'dev ops', 'ci/cd', 'continuous integration', 'continuous deployment', 'docker', 'kubernetes', 'jenkins', 'terraform', 'ansible', 'puppet', 'chef','aws', 'azure', 'gcp', 'google cloud', 'cloud computing', 'infrastructure as code','containerization', 'orchestration', 'microservices', 'monitoring', 'logging','prometheus', 'grafana', 'elk stack', 'elasticsearch', 'kibana', 'logstash','git', 'github actions', 'gitlab ci', 'bitbucket pipelines', 'circleci','linux', 'bash', 'shell scripting', 'python automation', 'yaml', 'json','nginx', 'apache', 'load balancing', 'auto scaling', 'vpc', 'security groups','iam', 'route53', 'cloudformation', 'cloudwatch', 'lambda', 's3', 'ec2', 'ecs','helm', 'istio', 'service mesh', 'api gateway', 'backup', 'disaster recovery','infrastructure monitoring', 'application monitoring', 'alerting', 'incident management','configuration management', 'version control', 'artifact management', 'nexus', 'artifactory'],
   dataScience: ['tensorflow', 'keras', 'pytorch', 'machine learning', 'deep learning', 'flask', 'streamlit', 'python', 'data analysis', 'pandas', 'numpy', 'scikit-learn', 'statistics', 'data mining', 'ai', 'artificial intelligence', 'big data'],
   
   frontendDevelopment: ['react', 'vue.js', 'angular', 'javascript', 'typescript', 'html', 'css', 'bootstrap', 'tailwind', 'sass', 'less', 'webpack', 'vite', 'next.js', 'redux', 'jquery', 'responsive design', 'pwa', 'web accessibility'],
@@ -191,7 +204,7 @@ export async function analyzeResume(formData) {
     const extractionResult = await model.generateContent(extractionPrompt);
     const extractionResponseText = extractionResult.response.text().trim();
     
-    // Clean up the response to ensure it's valid JSON
+    
     let cleanedResponse = extractionResponseText;
     
     // Remove markdown code block indicators if present
@@ -232,6 +245,7 @@ const skillsLower = skills.map(skill => skill.toLowerCase());
 // Determine job field based on skills with enhanced detection
 let jobField = "Unknown";
 let fieldScore = { 
+  "DevOps": 0,
   "Data Science": 0, 
   "Frontend Development": 0, 
   "Full Stack Development": 0,
@@ -243,7 +257,12 @@ let fieldScore = {
 
 // Calculate scores for each field based on skills with weighted scoring
 skillsLower.forEach(skill => {
-  // Data Science scoring with weights
+  // DevOps scoring with weights
+if (skillKeywords.devops.some(keyword => skill.includes(keyword))) {
+  // Give higher weight to core DevOps skills
+  const weight = ['docker', 'kubernetes', 'jenkins', 'terraform', 'aws', 'ci/cd', 'devops', 'ansible'].some(key => skill.includes(key)) ? 3 : 1;
+  fieldScore["DevOps"] += weight;
+}
   if (skillKeywords.dataScience.some(keyword => skill.includes(keyword))) {
     // Give higher weight to core data science skills
     const weight = ['tensorflow', 'pytorch', 'machine learning', 'deep learning', 'data analysis', 'pandas', 'numpy', 'scikit-learn'].some(key => skill.includes(key)) ? 2 : 1;
@@ -307,6 +326,9 @@ projects.forEach(project => {
     let fieldKey;
     // Map the field from camelCase to the appropriate category name
     switch (field) {
+      case 'devops':
+        fieldKey = 'DevOps';
+        break;
       case 'dataScience':
         fieldKey = 'Data Science';
         break;
@@ -352,7 +374,11 @@ for (const [field, score] of Object.entries(fieldScore)) {
 if (jobField === "Unknown" || maxScore < 2) {
   const resumeLower = resumeText.toLowerCase();
   
-  // Check for strong indicators in the whole resume
+if (resumeLower.includes('devops') || resumeLower.includes('ci/cd') || resumeLower.includes('docker') || 
+    resumeLower.includes('kubernetes') || resumeLower.includes('jenkins') || resumeLower.includes('terraform') ||
+    resumeLower.includes('infrastructure') || resumeLower.includes('deployment automation')) {
+  jobField = "DevOps";
+}
   if (resumeLower.includes('react') || resumeLower.includes('angular') || resumeLower.includes('vue') || 
       resumeLower.includes('frontend') || resumeLower.includes('html') || resumeLower.includes('css')) {
     jobField = "Frontend Development";
@@ -763,6 +789,7 @@ export async function analyzeResumeWithJobDescription(formData) {
     
     // Enhanced field detection with better keywords and scoring
     const fieldScores = {
+      "DevOps": 0,
       "Data Science": 0,
       "Frontend Development": 0,
       "Full Stack Development": 0,
@@ -771,9 +798,18 @@ export async function analyzeResumeWithJobDescription(formData) {
       "iOS Development": 0,
       "UI/UX Development": 0
     };
-    
+    // DevOps keywords with weights
+const devopsKeywords = [
+  { words: ['devops engineer', 'devops specialist', 'site reliability engineer', 'sre', 'cloud engineer', 'infrastructure engineer'], weight: 5 },
+  { words: ['docker', 'kubernetes', 'jenkins', 'terraform', 'ansible', 'puppet', 'chef'], weight: 4 },
+  { words: ['ci/cd', 'continuous integration', 'continuous deployment', 'pipeline', 'automation'], weight: 4 },
+  { words: ['aws', 'azure', 'gcp', 'google cloud', 'cloud computing', 'infrastructure as code'], weight: 3 },
+  { words: ['monitoring', 'prometheus', 'grafana', 'elk stack', 'logging', 'alerting'], weight: 3 },
+  { words: ['containerization', 'orchestration', 'microservices', 'service mesh', 'istio'], weight: 2 }
+];
     // Data Science keywords with weights
     const dataKeywords = [
+
       { words: ['data scientist', 'data science', 'machine learning engineer', 'ml engineer', 'ai engineer'], weight: 5 },
       { words: ['python', 'r programming', 'sql', 'pandas', 'numpy', 'scikit-learn'], weight: 3 },
       { words: ['tensorflow', 'pytorch', 'keras', 'machine learning', 'deep learning'], weight: 4 },
@@ -828,6 +864,7 @@ export async function analyzeResumeWithJobDescription(formData) {
     
     // Calculate scores for each field
     const keywordSets = {
+      "DevOps": devopsKeywords,
       "Data Science": dataKeywords,
       "Frontend Development": frontendKeywords,
       "Full Stack Development": fullStackKeywords,
@@ -862,7 +899,12 @@ export async function analyzeResumeWithJobDescription(formData) {
     // If no clear winner or very low score, do fallback detection
     if (maxScore < 3) {
       console.log("Low confidence in field detection, using fallback logic");
-      
+      if (combinedJobText.includes('devops') || combinedJobText.includes('sre') || 
+        combinedJobText.includes('site reliability') || combinedJobText.includes('infrastructure') ||
+        combinedJobText.includes('ci/cd') || combinedJobText.includes('docker') ||
+        combinedJobText.includes('kubernetes') || combinedJobText.includes('jenkins')) {
+        jobField = "DevOps";
+}
       if (combinedJobText.includes('data') || combinedJobText.includes('analyst') || 
           combinedJobText.includes('scientist') || combinedJobText.includes('python') ||
           combinedJobText.includes('machine learning') || combinedJobText.includes('statistics')) {

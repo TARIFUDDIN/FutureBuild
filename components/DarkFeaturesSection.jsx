@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { 
   BrainCircuit,
   Briefcase,
@@ -13,6 +15,36 @@ import {
 } from "lucide-react";
 
 const ModernDarkFeaturesSection = () => {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Static star positions to prevent hydration mismatch
+  const staticStars = [
+    { left: "15%", top: "10%", delay: "0s" },
+    { left: "85%", top: "20%", delay: "0.5s" },
+    { left: "25%", top: "75%", delay: "1s" },
+    { left: "70%", top: "85%", delay: "1.5s" },
+    { left: "95%", top: "15%", delay: "2s" },
+    { left: "5%", top: "60%", delay: "2.5s" },
+    { left: "45%", top: "5%", delay: "3s" },
+    { left: "60%", top: "90%", delay: "0.3s" },
+    { left: "80%", top: "45%", delay: "0.8s" },
+    { left: "30%", top: "30%", delay: "1.3s" },
+    { left: "90%", top: "70%", delay: "1.8s" },
+    { left: "10%", top: "40%", delay: "2.3s" },
+    { left: "55%", top: "65%", delay: "2.8s" },
+    { left: "75%", top: "25%", delay: "0.2s" },
+    { left: "35%", top: "80%", delay: "0.7s" },
+    { left: "65%", top: "15%", delay: "1.2s" },
+    { left: "20%", top: "95%", delay: "1.7s" },
+    { left: "85%", top: "55%", delay: "2.2s" },
+    { left: "40%", top: "50%", delay: "2.7s" },
+    { left: "12%", top: "25%", delay: "0.1s" }
+  ];
+
   const features = [
     {
       icon: <Globe className="w-12 h-12" />,
@@ -147,16 +179,16 @@ const ModernDarkFeaturesSection = () => {
           <div className="absolute top-0 left-0 w-px h-full bg-gradient-to-b from-transparent via-purple-500/50 to-transparent animate-scan-vertical"></div>
         </div>
         
-        {/* Particle effects */}
+        {/* Static particle effects - no hydration issues */}
         <div className="absolute inset-0">
-          {[...Array(20)].map((_, i) => (
+          {staticStars.map((star, i) => (
             <div
               key={i}
               className="absolute w-1 h-1 bg-white/30 rounded-full animate-twinkle"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`
+                left: star.left,
+                top: star.top,
+                animationDelay: star.delay
               }}
             ></div>
           ))}
