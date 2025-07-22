@@ -1,13 +1,15 @@
 // app/(main)/job-automation/page.jsx
 // UPDATED: Ensures proper redirection to job session with real jobs
+// FIXED: Added proper await for searchParams
 
 import { getJobSearchSessions, getJobApplications } from "../../../actions/ai-job-automation";
 import AIJobAutomationView from "./_components/ai-job-automation-view";
 
 export default async function JobAutomationPage({ searchParams }) {
   try {
-    // Check for error from redirect
-    const error = searchParams?.error;
+    // Await searchParams before accessing its properties
+    const resolvedSearchParams = await searchParams;
+    const error = resolvedSearchParams?.error;
     
     // Get initial data
     const [sessionsResult, applicationsResult] = await Promise.all([

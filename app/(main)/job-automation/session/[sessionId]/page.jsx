@@ -1,5 +1,5 @@
 // app/(main)/job-automation/session/[sessionId]/page.jsx
-// FIXED: Better error handling and real-time job loading
+// SIMPLIFIED: Only job display and basic application tracking
 
 import { getSessionJobs } from "../../../../../actions/ai-job-automation";
 import { redirect } from "next/navigation";
@@ -53,7 +53,7 @@ function JobSessionLoading() {
 }
 
 export default async function JobSessionPage({ params }) {
-  const { sessionId } = params;
+  const { sessionId } = await params;
   
   console.log('🔍 Loading job session page for:', sessionId);
   

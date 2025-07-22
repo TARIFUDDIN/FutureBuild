@@ -9,21 +9,17 @@ import {
   DollarSign,
   Users,
   Star,
-  Mail,
-  FileText,
   ExternalLink,
-  Zap,
   AlertCircle,
   CheckCircle,
   Loader2,
   Eye,
-  Send,
-  RefreshCw
+  RefreshCw,
+  TrendingUp
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
 import { Badge } from "../../../../components/ui/badge";
-import { Progress } from "../../../../components/ui/progress";
 import { toast } from "sonner";
 import Link from "next/link";
 import {
@@ -35,36 +31,34 @@ import {
   DialogTrigger,
 } from "../../../../components/ui/dialog";
 import {
-  findJobContacts,
-  createJobApplication,
-  applyToJobWithAI,
-  scrapeLinkedInJobs
+  createSimpleJobApplication,
+  updateJobStatus,
+  getSessionJobs
 } from "../../../../actions/ai-job-automation";
 
-const JobSessionView = ({ sessionId, initialJobs }) => {
+const JobSessionView = ({ sessionId, initialJobs, session }) => {
   const [jobs, setJobs] = useState(initialJobs || []);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [contactsLoading, setContactsLoading] = useState(false);
   const [applicationLoading, setApplicationLoading] = useState(false);
-  const [scrapingLoading, setScrapingLoading] = useState(false);
+  const [refreshLoading, setRefreshLoading] = useState(false);
   const [sortBy, setSortBy] = useState("score");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // Add refresh functionality
+  // Refresh jobs
   const handleRefreshJobs = async () => {
-    setScrapingLoading(true);
+    setRefreshLoading(true);
     try {
-      const result = await scrapeLinkedInJobs(sessionId, 50);
+      const result = await getSessionJobs(sessionId);
       if (result.success) {
-        setJobs(result.jobs);
-        toast.success(`Refreshed! Found ${result.jobs.length} jobs`);
+        setJobs(result.jobs || []);
+        toast.success(`Refreshed! Found ${result.jobs?.length || 0} jobs`);
       } else {
         toast.error("Failed to refresh jobs: " + result.error);
       }
     } catch (error) {
       toast.error("Error refreshing jobs");
     } finally {
-      setScrapingLoading(false);
+      setRefreshLoading(false);
     }
   };
 
@@ -80,93 +74,55 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
   const getStatusColor = (status) => {
     const colors = {
       DISCOVERED: "bg-blue-500",
-      ANALYZING: "bg-yellow-500",
-      MATCHED: "bg-green-500",
-      APPLIED: "bg-purple-500",
+      VIEWED: "bg-purple-500",
+      APPLIED: "bg-green-500",
       REJECTED: "bg-red-500",
-      INTERVIEW_SCHEDULED: "bg-orange-500",
       ARCHIVED: "bg-gray-500",
     };
     return colors[status] || "bg-gray-500";
   };
 
-  const handleFindContacts = async (jobId) => {
-    setContactsLoading(true);
-    try {
-      const result = await findJobContacts(jobId);
-      if (result.success) {
-        toast.success(`Found ${result.contacts.length} contacts for this job`);
-        // Update local state to reflect contact attempts
-        setJobs(prev => prev.map(job => 
-          job.id === jobId 
-            ? { ...job, _count: { ...job._count, contactAttempts: (job._count?.contactAttempts || 0) + 1 }}
-            : job
-        ));
-      } else {
-        toast.error("Failed to find contacts: " + result.error);
-      }
-    } catch (error) {
-      toast.error("Error finding contacts");
-    } finally {
-      setContactsLoading(false);
-    }
-  };
-
-  const handleApplyToJob = async (jobId, contactId) => {
+  // Simple application tracking (no automation)
+  const handleSimpleApply = async (jobId) => {
     setApplicationLoading(true);
     try {
-      const result = await createJobApplication(jobId, contactId, true);
+      const result = await createSimpleJobApplication(jobId);
       if (result.success) {
-        toast.success("Application submitted successfully!");
+        toast.success("Application tracked successfully!");
         // Update job status in local state
         setJobs(prev => prev.map(job => 
           job.id === jobId 
             ? { 
                 ...job, 
                 status: "APPLIED", 
-                _count: { 
-                  ...job._count, 
-                  applications: (job._count?.applications || 0) + 1 
-                }
+                applications: [{ status: "APPLIED" }]
               }
             : job
         ));
       } else {
-        toast.error("Failed to submit application: " + result.error);
+        toast.error("Failed to track application: " + result.error);
       }
     } catch (error) {
-      toast.error("Error submitting application");
+      toast.error("Error tracking application");
     } finally {
       setApplicationLoading(false);
     }
   };
 
-  const handleAIApply = async (jobId) => {
-    setApplicationLoading(true);
+  const handleUpdateJobStatus = async (jobId, status) => {
     try {
-      const result = await applyToJobWithAI(jobId);
+      const result = await updateJobStatus(jobId, status);
       if (result.success) {
-        toast.success("AI application process completed!");
+        toast.success(`Job status updated to ${status}`);
         // Update job status in local state
         setJobs(prev => prev.map(job => 
-          job.id === jobId 
-            ? { 
-                ...job, 
-                status: "APPLIED", 
-                _count: { 
-                  ...job._count, 
-                  applications: (job._count?.applications || 0) + 1 
-                }
-              }
-            : job
+          job.id === jobId ? { ...job, status } : job
         ));
       } else {
-        toast.error("AI application failed: " + result.error);
+        toast.error("Failed to update job status");
       }
     } catch (error) {
-      toast.error("Error in AI application");
-    } finally {
-      setApplicationLoading(false);
+      toast.error("Error updating job status");
     }
   };
 
@@ -220,10 +176,10 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
                   <span>{job.salaryInfo}</span>
                 </div>
               )}
-              {job.applicantsCount && (
+              {job.source && (
                 <div className="flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  <span>{job.applicantsCount} applicants</span>
+                  <TrendingUp className="h-3 w-3" />
+                  <span>{job.source}</span>
                 </div>
               )}
             </div>
@@ -285,8 +241,7 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
                       <div>Company: {job.company || 'Not specified'}</div>
                       <div>Location: {job.location || 'Not specified'}</div>
                       <div>Posted: {job.postedAt || 'Recently'}</div>
-                      <div>Employment: {job.employmentType || 'Full-time'}</div>
-                      <div>Experience: {job.experienceLevel || 'Mid-level'}</div>
+                      <div>Remote: {job.remote ? 'Yes' : 'No'}</div>
                       {job.salaryInfo && <div>Salary: {job.salaryInfo}</div>}
                     </div>
                   </div>
@@ -296,8 +251,7 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
                       <div>AI Match Score: {job.aiMatchScore || 0}%</div>
                       <div>Priority: {job.priority || 'LOW'}</div>
                       <div>Source: {job.source || 'Unknown'}</div>
-                      <div>Remote: {job.remote ? 'Yes' : 'No'}</div>
-                      <div>Applications: {job._count?.applications || 0}</div>
+                      <div>Status: {job.status || 'DISCOVERED'}</div>
                     </div>
                   </div>
                 </div>
@@ -329,33 +283,18 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 pt-4 border-t">
-                  {(job._count?.contactAttempts || 0) === 0 ? (
+                  {job.status !== "APPLIED" && !job.applications?.length && (
                     <Button 
-                      onClick={() => handleFindContacts(job.id)}
-                      disabled={contactsLoading}
-                      className="flex items-center gap-2"
-                    >
-                      {contactsLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Mail className="h-4 w-4" />
-                      )}
-                      Find Contacts
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={() => handleApplyToJob(job.id, "contact-id")}
-                      disabled={applicationLoading || (job._count?.applications || 0) > 0}
+                      onClick={() => handleSimpleApply(job.id)}
+                      disabled={applicationLoading}
                       className="flex items-center gap-2"
                     >
                       {applicationLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (job._count?.applications || 0) > 0 ? (
-                        <CheckCircle className="h-4 w-4" />
                       ) : (
-                        <Send className="h-4 w-4" />
+                        <CheckCircle className="h-4 w-4" />
                       )}
-                      {(job._count?.applications || 0) > 0 ? "Applied" : "Apply Now"}
+                      Track Application
                     </Button>
                   )}
                   
@@ -367,28 +306,50 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
                       </a>
                     </Button>
                   )}
+
+                  {/* Status Update Buttons */}
+                  <div className="flex gap-1">
+                    {job.status !== "VIEWED" && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleUpdateJobStatus(job.id, "VIEWED")}
+                      >
+                        Mark Viewed
+                      </Button>
+                    )}
+                    {job.status !== "ARCHIVED" && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleUpdateJobStatus(job.id, "ARCHIVED")}
+                      >
+                        Archive
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
 
           {/* Quick Apply Button */}
-          {(job._count?.contactAttempts || 0) === 0 && job.status !== "APPLIED" && (
+          {job.status !== "APPLIED" && !job.applications?.length && (
             <Button 
               size="sm" 
-              onClick={() => handleAIApply(job.id)}
+              onClick={() => handleSimpleApply(job.id)}
               disabled={applicationLoading}
             >
               {applicationLoading ? (
                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
               ) : (
-                <Zap className="h-3 w-3 mr-1" />
+                <CheckCircle className="h-3 w-3 mr-1" />
               )}
-              AI Apply
+              Track Apply
             </Button>
           )}
 
-          {(job._count?.applications || 0) > 0 && (
+          {(job.applications?.length > 0 || job.status === "APPLIED") && (
             <Badge variant="default" className="text-xs">
               Applied
             </Badge>
@@ -412,7 +373,7 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
           <div>
             <h1 className="text-3xl font-bold">Job Search Results</h1>
             <p className="text-muted-foreground">
-              Found {jobs.length} matching positions
+              {session?.sessionName} • Found {jobs.length} matching positions
             </p>
           </div>
         </div>
@@ -420,15 +381,15 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
         {/* Refresh Button */}
         <Button 
           onClick={handleRefreshJobs}
-          disabled={scrapingLoading}
+          disabled={refreshLoading}
           variant="outline"
         >
-          {scrapingLoading ? (
+          {refreshLoading ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <RefreshCw className="h-4 w-4 mr-2" />
           )}
-          Refresh Jobs
+          Refresh
         </Button>
       </div>
 
@@ -451,7 +412,7 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-blue-600">
-              {jobs.filter(j => j.status === 'APPLIED').length}
+              {jobs.filter(j => j.status === 'APPLIED' || j.applications?.length > 0).length}
             </div>
             <div className="text-sm text-muted-foreground">Applied</div>
           </CardContent>
@@ -491,7 +452,7 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
           >
             <option value="all">All Jobs</option>
             <option value="discovered">New</option>
-            <option value="matched">High Match</option>
+            <option value="viewed">Viewed</option>
             <option value="applied">Applied</option>
           </select>
         </div>
@@ -533,8 +494,8 @@ const JobSessionView = ({ sessionId, initialJobs }) => {
           <p className="text-muted-foreground mb-4">
             Jobs are being scraped in the background. This may take a few minutes.
           </p>
-          <Button onClick={handleRefreshJobs} disabled={scrapingLoading}>
-            {scrapingLoading ? (
+          <Button onClick={handleRefreshJobs} disabled={refreshLoading}>
+            {refreshLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <RefreshCw className="h-4 w-4 mr-2" />
