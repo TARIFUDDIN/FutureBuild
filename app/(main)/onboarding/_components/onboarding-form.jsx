@@ -30,7 +30,6 @@ import {
 
 import { onboardingSchema } from "../../../lib/schema";
 import { updateUser } from "../../../../actions/user";
-import useFetch from "../../../../hooks/use-fetch";
 
 const OnboardingForm = ({ industries }) => {
   const router = useRouter();
@@ -41,15 +40,12 @@ const OnboardingForm = ({ industries }) => {
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
   const {
-    fn: updateUserFn,
-  } = useFetch(updateUser);
-
-  const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
     watch,
+    reset,
   } = useForm({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
@@ -67,7 +63,7 @@ const OnboardingForm = ({ industries }) => {
       if (!isLoaded || !user) return;
       
       try {
-        // Check if user is already onboarded
+        // Simple client-side check
         const isOnboarded = localStorage.getItem('isOnboarded') === 'true';
         
         if (isOnboarded) {
@@ -89,28 +85,67 @@ const OnboardingForm = ({ industries }) => {
   const onSubmit = async (values) => {
     try {
       setIsSubmitting(true);
+      console.log("🚀 Onboarding: Starting form submission with values:", values);
+      console.log("🔍 Skills type:", typeof values.skills, "Value:", values.skills);
+
+      // Validate required fields
+      if (!values.industry || !values.subIndustry) {
+        toast.error("Please select both industry and specialization");
+        return;
+      }
+
       const formattedIndustry = `${values.industry}-${values.subIndustry
         .toLowerCase()
         .replace(/ /g, "-")}`;
 
-      const result = await updateUserFn({
-        ...values,
+      // Prepare data for submission - fix skills handling
+      let skillsArray = [];
+      if (values.skills) {
+        if (typeof values.skills === 'string') {
+          // If it's a string, split by comma
+          skillsArray = values.skills.split(',').map(s => s.trim()).filter(s => s);
+        } else if (Array.isArray(values.skills)) {
+          // If it's already an array, use it
+          skillsArray = values.skills.filter(s => s);
+        }
+      }
+
+      const submitData = {
         industry: formattedIndustry,
-      });
+        experience: values.experience ? parseInt(values.experience) : 0,
+        bio: values.bio || "",
+        skills: skillsArray,
+      };
+
+      console.log("📤 Onboarding: Submitting data:", submitData);
+
+      const result = await updateUser(submitData);
+      console.log("📥 Onboarding: Received result:", result);
 
       if (result && result.success) {
         localStorage.setItem('isOnboarded', 'true');
         toast.success("Profile completed successfully!");
-        const redirectUrl = searchParams.get('redirect_url') || '/dashboard';
         
-        router.refresh();
-        router.push(redirectUrl);
+        const redirectUrl = searchParams.get('redirect_url') || '/dashboard';
+        console.log("🔄 Onboarding: Redirecting to:", redirectUrl);
+        
+        // Use window.location for more reliable redirect
+        window.location.href = redirectUrl;
       } else {
-        throw new Error(result?.error || 'Failed to update profile');
+        console.error("❌ Onboarding: Update failed:", result);
+        
+        // Show specific error message
+        const errorMessage = result?.error || 'Failed to update profile';
+        toast.error(`Error: ${errorMessage}`);
+        
+        // Reset form if there's a server error
+        if (result?.error && result.error.includes('timeout')) {
+          toast.error("Request timed out. Please try again with a simpler bio.");
+        }
       }
     } catch (error) {
-      console.error("Onboarding error:", error);
-      toast.error("Failed to complete profile. Please try again.");
+      console.error("💥 Onboarding: Submission error:", error);
+      toast.error(`Submission failed: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -131,8 +166,8 @@ const OnboardingForm = ({ industries }) => {
   }
 
   return (
-    <div className="flex items-center justify-center bg-background">
-      <Card className="w-full max-w-lg mt-10 mx-2">
+    <div className="flex items-center justify-center bg-background min-h-screen py-8">
+      <Card className="w-full max-w-lg mx-4">
         <CardHeader>
           <CardTitle className="gradient-title text-4xl">
             Complete Your Profile
@@ -145,7 +180,7 @@ const OnboardingForm = ({ industries }) => {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="industry">Industry</Label>
+              <Label htmlFor="industry">Industry *</Label>
               <Select
                 onValueChange={(value) => {
                   setValue("industry", value);
@@ -154,6 +189,7 @@ const OnboardingForm = ({ industries }) => {
                   );
                   setValue("subIndustry", "");
                 }}
+                required
               >
                 <SelectTrigger id="industry">
                   <SelectValue placeholder="Select an industry" />
@@ -176,11 +212,12 @@ const OnboardingForm = ({ industries }) => {
               )}
             </div>
 
-            {watchIndustry && (
+            {watchIndustry && selectedIndustry && (
               <div className="space-y-2">
-                <Label htmlFor="subIndustry">Specialization</Label>
+                <Label htmlFor="subIndustry">Specialization *</Label>
                 <Select
                   onValueChange={(value) => setValue("subIndustry", value)}
+                  required
                 >
                   <SelectTrigger id="subIndustry">
                     <SelectValue placeholder="Select your specialization" />
@@ -242,8 +279,12 @@ const OnboardingForm = ({ industries }) => {
                 id="bio"
                 placeholder="Tell us about your professional background..."
                 className="h-32"
+                maxLength={500}
                 {...register("bio")}
               />
+              <p className="text-sm text-muted-foreground">
+                Keep it concise (max 500 characters)
+              </p>
               {errors.bio && (
                 <p className="text-sm text-red-500">{errors.bio.message}</p>
               )}
@@ -257,7 +298,7 @@ const OnboardingForm = ({ industries }) => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  Saving Profile...
                 </>
               ) : (
                 "Complete Profile"

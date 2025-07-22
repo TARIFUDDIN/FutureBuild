@@ -7,9 +7,9 @@ import { getIndustryInsights } from "../../../actions/dashboard";
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
+  console.log("🏠 Dashboard: Checking onboarding status...");
+  
   try {
-    console.log("🏠 Dashboard: Checking onboarding status...");
-    
     const result = await getUserOnboardingStatus();
     
     // Handle authentication errors
@@ -36,20 +36,20 @@ export default async function DashboardPage() {
     const insights = await getIndustryInsights();
     
     return (
-      <div className="container mx-auto">
+      <div className="container mx-auto py-8">
         <DashboardView insights={insights} />
       </div>
     );
     
   } catch (error) {
-    console.error("💥 Dashboard: Unexpected error:", error);
-    
-    // Handle redirect errors (these are expected)
+    // Handle expected redirect errors (these are normal and not actually errors)
     if (error.message === 'NEXT_REDIRECT' || error.digest?.includes('NEXT_REDIRECT')) {
-      throw error;
+      console.log("🔄 Dashboard: Performing redirect (normal behavior)");
+      throw error; // Re-throw to allow redirect to work
     }
     
-    // For other errors, redirect to onboarding as fallback
+    // Only log truly unexpected errors
+    console.error("💥 Dashboard: Actual unexpected error:", error.message);
     redirect("/onboarding");
   }
 }
