@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useUser } from "@clerk/nextjs";
 import {
   Card,
   CardContent,
@@ -34,8 +35,10 @@ import useFetch from "../../../../hooks/use-fetch";
 const OnboardingForm = ({ industries }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, isLoaded } = useUser();
   const [selectedIndustry, setSelectedIndustry] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
   const {
     fn: updateUserFn,
@@ -58,6 +61,31 @@ const OnboardingForm = ({ industries }) => {
     }
   });
 
+  // Check if user is already onboarded (client-side)
+  useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      if (!isLoaded || !user) return;
+      
+      try {
+        // Check if user is already onboarded
+        const isOnboarded = localStorage.getItem('isOnboarded') === 'true';
+        
+        if (isOnboarded) {
+          const redirectUrl = searchParams.get('redirect_url') || '/dashboard';
+          router.push(redirectUrl);
+          return;
+        }
+        
+        setIsCheckingStatus(false);
+      } catch (error) {
+        console.error('Error checking onboarding status:', error);
+        setIsCheckingStatus(false);
+      }
+    };
+
+    checkOnboardingStatus();
+  }, [isLoaded, user, router, searchParams]);
+
   const onSubmit = async (values) => {
     try {
       setIsSubmitting(true);
@@ -70,13 +98,15 @@ const OnboardingForm = ({ industries }) => {
         industry: formattedIndustry,
       });
 
-      if (result) {
+      if (result && result.success) {
         localStorage.setItem('isOnboarded', 'true');
         toast.success("Profile completed successfully!");
         const redirectUrl = searchParams.get('redirect_url') || '/dashboard';
         
         router.refresh();
         router.push(redirectUrl);
+      } else {
+        throw new Error(result?.error || 'Failed to update profile');
       }
     } catch (error) {
       console.error("Onboarding error:", error);
@@ -87,6 +117,18 @@ const OnboardingForm = ({ industries }) => {
   };
 
   const watchIndustry = watch("industry");
+
+  // Show loading while checking status
+  if (isCheckingStatus || !isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center bg-background">
