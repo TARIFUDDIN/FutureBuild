@@ -63,5 +63,57 @@ export async function updateUser(data) {
   }
 }
 
-// REMOVED: getUserOnboardingStatus function since it was causing issues
-// Onboarding status checking is now handled client-side
+// RESTORED: Simple getUserOnboardingStatus that works for server components
+export async function getUserOnboardingStatus() {
+  try {
+    console.log("🔍 getUserOnboardingStatus: Starting auth check...");
+    const { userId } = await auth();
+    console.log("🔍 getUserOnboardingStatus: UserId from auth:", userId ? "✅ Found" : "❌ Missing");
+         
+    if (!userId) {
+      console.log("❌ getUserOnboardingStatus: No userId, returning auth required");
+      return {
+        isOnboarded: false,
+        error: "Authentication required"
+      };
+    }
+
+    console.log("🔍 getUserOnboardingStatus: Querying database for user...");
+    
+    // Simple database query without complex operations
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+      select: {
+        id: true,
+        industry: true,
+        name: true,
+        email: true
+      }
+    });
+
+    console.log("🔍 getUserOnboardingStatus: User from DB:", user ? "✅ Found" : "❌ Missing");
+    console.log("🔍 getUserOnboardingStatus: User industry:", user?.industry || "❌ No industry");
+
+    if (!user) {
+      console.log("❌ getUserOnboardingStatus: User not found in database");
+      return {
+        isOnboarded: false,
+        error: "User not found"
+      };
+    }
+
+    const isOnboarded = !!user.industry;
+    console.log("🔍 getUserOnboardingStatus: Final result - isOnboarded:", isOnboarded);
+
+    return {
+      isOnboarded,
+      user: user.industry ? user : null
+    };
+  } catch (error) {
+    console.error("💥 getUserOnboardingStatus: Error checking onboarding status:", error);
+    return {
+      isOnboarded: false,
+      error: "Failed to check onboarding status"
+    };
+  }
+}

@@ -1,41 +1,51 @@
-// app/job-search/page.jsx
 import { getUserOnboardingStatus } from "../../../actions/user";
 import { redirect } from "next/navigation";
 import JobSearchView from "./_components/job-search-view";
 
+// Force dynamic rendering to avoid prerender issues
+export const dynamic = 'force-dynamic';
+
 export default async function JobSearchPage() {
-  console.log("🔍 Job Search Page: Starting onboarding check...");
-  
   try {
-    const result = await getUserOnboardingStatus();
-    console.log("🔍 Job Search Page: Onboarding result:", result);
+    console.log("🔍 Job Search: Checking onboarding status...");
     
-    // Handle potential errors
-    if (result.error) {
-      console.error("❌ Job Search Page: Error checking onboarding status:", result.error);
-      // If there's an authentication error, redirect to sign in
-      if (result.error === "Authentication required") {
-        console.log("🔄 Job Search Page: Redirecting to sign-in due to auth error");
-        redirect("/sign-in");
-      }
-      // For other errors, don't redirect - let the page load and handle gracefully
-      console.log("⚠️ Job Search Page: Non-auth error, proceeding with caution");
+    const result = await getUserOnboardingStatus();
+    
+    // Handle authentication errors
+    if (result.error === "Authentication required") {
+      console.log("🔒 Job Search: User not authenticated, redirecting to sign-in");
+      redirect("/sign-in");
     }
     
+    // Handle user not found
+    if (result.error === "User not found") {
+      console.log("👤 Job Search: User not found in database, redirecting to onboarding");
+      redirect("/onboarding");
+    }
+    
+    // Check if user completed onboarding
     if (!result.isOnboarded) {
-      console.log("🔄 Job Search Page: User not onboarded, redirecting to onboarding");
+      console.log("📋 Job Search: User not onboarded, redirecting to onboarding");
       redirect("/onboarding");
     }
 
-    console.log("✅ Job Search Page: User is onboarded, loading page");
+    console.log("✅ Job Search: User is onboarded, loading job search");
+    
     return (
       <div className="container mx-auto">
         <JobSearchView />
       </div>
     );
+    
   } catch (error) {
-    console.error("💥 Job Search Page: Unexpected error:", error);
-    // If there's an unexpected error, redirect to onboarding as fallback
+    console.error("💥 Job Search: Unexpected error:", error);
+    
+    // Handle redirect errors (these are expected)
+    if (error.message === 'NEXT_REDIRECT' || error.digest?.includes('NEXT_REDIRECT')) {
+      throw error;
+    }
+    
+    // For other errors, redirect to onboarding as fallback
     redirect("/onboarding");
   }
 }
