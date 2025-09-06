@@ -55,15 +55,42 @@ model Assessment {
   @@index([userId])
 }
 
+// Updated Resume model with new sections
 model Resume {
-  id          String    @id @default(cuid())
-  userId      String    @unique
-  user        User      @relation(fields: [userId], references: [id])
-  content     String    @db.Text
-  atsScore    Float?
-  feedback    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  content         String    @db.Text
+  atsScore        Float?
+  feedback        String?
+  
+  // Contact Information
+  email           String?
+  mobile          String?
+  linkedin        String?
+  github          String?   // Replaced twitter with github
+  
+  // Main sections
+  summary         String?   @db.Text
+  skills          String?   @db.Text
+  
+  // Tech Stack sections
+  frontendTech    String?   @db.Text
+  backendTech     String?   @db.Text
+  
+  // Experience entries (JSON array)
+  experience      Json[]    @default([])
+  education       Json[]    @default([])
+  
+  // Projects with GitHub and Live URLs
+  projects        Json[]    @default([])  // Each project can have githubUrl and liveUrl
+  
+  // New sections
+  achievements    Json[]    @default([])  // Achievements & Certifications
+  problemSolving  Json[]    @default([])  // Problem Solving Skills
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model CoverLetter {

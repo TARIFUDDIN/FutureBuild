@@ -124,8 +124,6 @@ const HeroSection = () => {
           </Link>
         
         </div>
-
-        {/* Enhanced Hero Image */}
         <div className={`hero-image-wrapper-enhanced mt-12 md:mt-16 transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
           <div 
             ref={imageRef} 
@@ -134,10 +132,8 @@ const HeroSection = () => {
               transform: `translate(${mousePosition.x * 0.02}px, ${mousePosition.y * 0.02}px)`,
             }}
           >
-            {/* Glow Effect */}
             <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-cyan-500/20 rounded-2xl blur-2xl animate-pulse-glow"></div>
             
-            {/* Main Image Container */}
             <div className="relative bg-gradient-to-br from-white/80 to-gray-100/80 dark:from-gray-800/80 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/20 rounded-2xl p-2 shadow-2xl">
               <Image
                 src="/banner3.png"

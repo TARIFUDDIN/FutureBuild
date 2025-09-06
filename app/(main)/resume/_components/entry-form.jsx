@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from "../../../../@/components/ui/card";
 import { entrySchema } from "../../../lib/schema";
-import { Sparkles, PlusCircle, X, Pencil, Save, Loader2 } from "lucide-react";
+import { Sparkles, PlusCircle, X, Pencil, Save, Loader2, Github, ExternalLink } from "lucide-react";
 import { improveWithAI } from "../../../../actions/resume";
 import { toast } from "sonner";
 import useFetch from "../../../../hooks/use-fetch";
@@ -27,7 +27,7 @@ const formatDisplayDate = (dateString) => {
     return format(date, "MMM yyyy");
   };
   
-  export function EntryForm({ type, entries, onChange }) {
+  export function EntryForm({ type, entries, onChange, showLinks = false }) {
     const [isAdding, setIsAdding] = useState(false);
   
     const {
@@ -46,14 +46,18 @@ const formatDisplayDate = (dateString) => {
         endDate: "",
         description: "",
         current: false,
+        githubUrl: "",
+        liveUrl: "",
+        techStack: "",
       },
     });
   
     const current = watch("current");
   
+    // UPDATED: Fixed handleAdd to include all form data
     const handleAdd = handleValidation((data) => {
       const formattedEntry = {
-        ...data,
+        ...data, // This spreads ALL form fields including githubUrl, liveUrl, techStack
         startDate: formatDisplayDate(data.startDate),
         endDate: data.current ? "" : formatDisplayDate(data.endDate),
       };
@@ -100,37 +104,74 @@ const formatDisplayDate = (dateString) => {
         type: type.toLowerCase(), // 'experience', 'education', or 'project'
       });
     };
+
+    const renderEntryCard = (item, index) => {
+      const hasLinks = showLinks && (item.githubUrl || item.liveUrl);
+      
+      return (
+        <Card key={index}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {item.title} @ {item.organization}
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="icon"
+              type="button"
+              onClick={() => handleDelete(index)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {item.current
+                ? `${item.startDate} - Present`
+                : `${item.startDate} - ${item.endDate}`}
+            </p>
+            {hasLinks && (
+              <div className="flex gap-2 mt-2">
+                {item.githubUrl && (
+                  <a
+                    href={item.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    <Github className="h-3 w-3" />
+                    GitHub
+                  </a>
+                )}
+                {item.liveUrl && (
+                  <a
+                    href={item.liveUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-green-600 hover:text-green-800"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Live Demo
+                  </a>
+                )}
+              </div>
+            )}
+            {item.techStack && (
+              <p className="mt-2 text-sm">
+                <span className="font-medium">Tech Stack:</span> {item.techStack}
+              </p>
+            )}
+            <p className="mt-2 text-sm whitespace-pre-wrap">
+              {item.description}
+            </p>
+          </CardContent>
+        </Card>
+      );
+    };
   
     return (
       <div className="space-y-4">
         <div className="space-y-4">
-          {entries.map((item, index) => (
-            <Card key={index}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {item.title} @ {item.organization}
-                </CardTitle>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  type="button"
-                  onClick={() => handleDelete(index)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {item.current
-                    ? `${item.startDate} - Present`
-                    : `${item.startDate} - ${item.endDate}`}
-                </p>
-                <p className="mt-2 text-sm whitespace-pre-wrap">
-                  {item.description}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          {entries.map((item, index) => renderEntryCard(item, index))}
         </div>
   
         {isAdding && (
@@ -206,6 +247,53 @@ const formatDisplayDate = (dateString) => {
                 />
                 <label htmlFor="current">Current {type}</label>
               </div>
+
+              {/* GitHub and Live URL fields for projects */}
+              {showLinks && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="GitHub URL (optional)"
+                        {...register("githubUrl")}
+                        type="url"
+                        error={errors.githubUrl}
+                      />
+                      {errors.githubUrl && (
+                        <p className="text-sm text-red-500">
+                          {errors.githubUrl.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Live Demo URL (optional)"
+                        {...register("liveUrl")}
+                        type="url"
+                        error={errors.liveUrl}
+                      />
+                      {errors.liveUrl && (
+                        <p className="text-sm text-red-500">
+                          {errors.liveUrl.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Tech Stack (e.g., React, Node.js, MongoDB...)"
+                      {...register("techStack")}
+                      error={errors.techStack}
+                    />
+                    {errors.techStack && (
+                      <p className="text-sm text-red-500">
+                        {errors.techStack.message}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
   
               <div className="space-y-2">
                 <Textarea

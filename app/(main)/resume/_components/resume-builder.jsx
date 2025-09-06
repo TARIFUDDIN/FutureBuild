@@ -10,6 +10,7 @@ import {
   Loader2,
   Monitor,
   Save,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import MDEditor from '@uiw/react-md-editor';
@@ -17,26 +18,26 @@ import { Button } from "../../../../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../components/ui/tabs";
 import { Textarea } from "../../../../components/ui/textarea";
 import { Input } from "../../../../components/ui/input";
-import { saveResume } from "../../../../actions/resume";
+import { saveResume, improveWithAI } from "../../../../actions/resume";
 import { EntryForm } from "./entry-form";
 import useFetch from "../../../../hooks/use-fetch";
 import { useUser } from "@clerk/nextjs";
 import { resumeSchema } from "../../../lib/schema";
 import { entriesToMarkdown } from "../../../lib/helper";
 
-import html2pdf from 'html2pdf.js';
-
 export default function ResumeBuilder({ initialContent }) {
   const [activeTab, setActiveTab] = useState("edit");
   const [previewContent, setPreviewContent] = useState(initialContent);
   const { user } = useUser();
   const [resumeMode, setResumeMode] = useState("preview");
+  const [html2pdf, setHtml2pdf] = useState(null);
 
   const {
     control,
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(resumeSchema),
@@ -47,6 +48,8 @@ export default function ResumeBuilder({ initialContent }) {
       experience: [],
       education: [],
       projects: [],
+      achievements: [],
+      problemSolving: [],
     },
   });
 
@@ -56,6 +59,35 @@ export default function ResumeBuilder({ initialContent }) {
     data: saveResult,
     error: saveError,
   } = useFetch(saveResume);
+
+  const {
+    loading: isImprovingSummary,
+    fn: improveSummaryFn,
+    data: improvedSummary,
+    error: improveSummaryError,
+  } = useFetch(improveWithAI);
+
+  const {
+    loading: isImprovingSkills,
+    fn: improveSkillsFn,
+    data: improvedSkills,
+    error: improveSkillsError,
+  } = useFetch(improveWithAI);
+
+  // Dynamically import html2pdf only on client side
+  useEffect(() => {
+    const loadHtml2pdf = async () => {
+      if (typeof window !== 'undefined') {
+        try {
+          const html2pdfModule = await import('html2pdf.js');
+          setHtml2pdf(html2pdfModule.default);
+        } catch (error) {
+          console.error('Failed to load html2pdf:', error);
+        }
+      }
+    };
+    loadHtml2pdf();
+  }, []);
 
   // Watch form fields for preview updates
   const formValues = watch();
@@ -82,6 +114,28 @@ export default function ResumeBuilder({ initialContent }) {
     }
   }, [saveResult, saveError, isSaving]);
 
+  // Handle improved summary
+  useEffect(() => {
+    if (improvedSummary && !isImprovingSummary) {
+      setValue("summary", improvedSummary);
+      toast.success("Summary improved successfully!");
+    }
+    if (improveSummaryError) {
+      toast.error(improveSummaryError.message || "Failed to improve summary");
+    }
+  }, [improvedSummary, improveSummaryError, isImprovingSummary, setValue]);
+
+  // Handle improved skills
+  useEffect(() => {
+    if (improvedSkills && !isImprovingSkills) {
+      setValue("skills", improvedSkills);
+      toast.success("Skills improved successfully!");
+    }
+    if (improveSkillsError) {
+      toast.error(improveSkillsError.message || "Failed to improve skills");
+    }
+  }, [improvedSkills, improveSkillsError, isImprovingSkills, setValue]);
+
   const getContactMarkdown = () => {
     const { contactInfo } = formValues;
     const parts = [];
@@ -89,7 +143,7 @@ export default function ResumeBuilder({ initialContent }) {
     if (contactInfo.mobile) parts.push(`📱 ${contactInfo.mobile}`);
     if (contactInfo.linkedin)
       parts.push(`💼 [LinkedIn](${contactInfo.linkedin})`);
-    if (contactInfo.twitter) parts.push(`🐦 [Twitter](${contactInfo.twitter})`);
+    if (contactInfo.github) parts.push(`🔗 [GitHub](${contactInfo.github})`);
 
     return parts.length > 0
       ? `## <div align="center">${user.fullName}</div>
@@ -98,7 +152,8 @@ export default function ResumeBuilder({ initialContent }) {
   };
 
   const getCombinedContent = () => {
-    const { summary, skills, experience, education, projects } = formValues;
+    const { summary, skills, experience, education, projects, achievements, problemSolving } = formValues;
+    
     return [
       getContactMarkdown(),
       summary && `## Professional Summary\n\n${summary}`,
@@ -106,6 +161,8 @@ export default function ResumeBuilder({ initialContent }) {
       entriesToMarkdown(experience, "Work Experience"),
       entriesToMarkdown(education, "Education"),
       entriesToMarkdown(projects, "Projects"),
+      entriesToMarkdown(achievements, "Achievements & Certifications"),
+      entriesToMarkdown(problemSolving, "Problem Solving Skills"),
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -114,6 +171,11 @@ export default function ResumeBuilder({ initialContent }) {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generatePDF = async () => {
+    if (!html2pdf) {
+      toast.error("PDF generation library is still loading. Please try again.");
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const element = document.getElementById("resume-pdf");
@@ -133,6 +195,32 @@ export default function ResumeBuilder({ initialContent }) {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleImproveSummary = async () => {
+    const summary = watch("summary");
+    if (!summary) {
+      toast.error("Please enter a summary first");
+      return;
+    }
+
+    await improveSummaryFn({
+      current: summary,
+      type: "summary",
+    });
+  };
+
+  const handleImproveSkills = async () => {
+    const skills = watch("skills");
+    if (!skills) {
+      toast.error("Please enter skills first");
+      return;
+    }
+
+    await improveSkillsFn({
+      current: skills,
+      type: "skills",
+    });
   };
 
   const onSubmit = async (data) => {
@@ -173,7 +261,10 @@ export default function ResumeBuilder({ initialContent }) {
               </>
             )}
           </Button>
-          <Button onClick={generatePDF} disabled={isGenerating}>
+          <Button 
+            onClick={generatePDF} 
+            disabled={isGenerating || !html2pdf}
+          >
             {isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -242,17 +333,15 @@ export default function ResumeBuilder({ initialContent }) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Twitter/X Profile
-                  </label>
+                  <label className="text-sm font-medium">GitHub Profile</label>
                   <Input
-                    {...register("contactInfo.twitter")}
+                    {...register("contactInfo.github")}
                     type="url"
-                    placeholder="https://twitter.com/your-handle"
+                    placeholder="https://github.com/your-username"
                   />
-                  {errors.contactInfo?.twitter && (
+                  {errors.contactInfo?.github && (
                     <p className="text-sm text-red-500">
-                      {errors.contactInfo.twitter.message}
+                      {errors.contactInfo.github.message}
                     </p>
                   )}
                 </div>
@@ -261,7 +350,28 @@ export default function ResumeBuilder({ initialContent }) {
 
             {/* Summary */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Professional Summary</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Professional Summary</h3>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleImproveSummary}
+                  disabled={isImprovingSummary || !watch("summary")}
+                >
+                  {isImprovingSummary ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Improving...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Improve with AI
+                    </>
+                  )}
+                </Button>
+              </div>
               <Controller
                 name="summary"
                 control={control}
@@ -281,7 +391,28 @@ export default function ResumeBuilder({ initialContent }) {
 
             {/* Skills */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Skills</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Skills</h3>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleImproveSkills}
+                  disabled={isImprovingSkills || !watch("skills")}
+                >
+                  {isImprovingSkills ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Improving...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Improve with AI
+                    </>
+                  )}
+                </Button>
+              </div>
               <Controller
                 name="skills"
                 control={control}
@@ -352,12 +483,55 @@ export default function ResumeBuilder({ initialContent }) {
                     type="Project"
                     entries={field.value}
                     onChange={field.onChange}
+                    showLinks={true}
                   />
                 )}
               />
               {errors.projects && (
                 <p className="text-sm text-red-500">
                   {errors.projects.message}
+                </p>
+              )}
+            </div>
+
+            {/* Achievements */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Achievements & Certifications</h3>
+              <Controller
+                name="achievements"
+                control={control}
+                render={({ field }) => (
+                  <EntryForm
+                    type="Achievement"
+                    entries={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              {errors.achievements && (
+                <p className="text-sm text-red-500">
+                  {errors.achievements.message}
+                </p>
+              )}
+            </div>
+
+            {/* Problem Solving */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Problem Solving Skills</h3>
+              <Controller
+                name="problemSolving"
+                control={control}
+                render={({ field }) => (
+                  <EntryForm
+                    type="Problem Solving"
+                    entries={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              {errors.problemSolving && (
+                <p className="text-sm text-red-500">
+                  {errors.problemSolving.message}
                 </p>
               )}
             </div>
@@ -392,7 +566,7 @@ export default function ResumeBuilder({ initialContent }) {
             <div className="flex p-3 gap-2 items-center border-2 border-yellow-600 text-yellow-600 rounded mb-2">
               <AlertTriangle className="h-5 w-5" />
               <span className="text-sm">
-                You will lose editied markdown if you update the form data.
+                You will lose edited markdown if you update the form data.
               </span>
             </div>
           )}

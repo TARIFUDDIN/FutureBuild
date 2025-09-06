@@ -50,10 +50,11 @@ export async function updateUser(data) {
 
     const result = await db.$transaction(
       async (tx) => {
-        // Handle industry insights
+        // FIXED: Handle industry insights properly
         let industryInsight = null;
         
         if (data.industry) {
+          // Check if industry insight exists
           industryInsight = await tx.industryInsight.findUnique({
             where: {
               industry: data.industry,
@@ -77,6 +78,7 @@ export async function updateUser(data) {
               console.log("✅ updateUser: Created industry insights");
             } catch (insightsError) {
               console.error("⚠️ updateUser: Failed to create insights, but continuing:", insightsError);
+              // Continue without insights if AI generation fails
             }
           }
         }

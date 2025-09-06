@@ -142,43 +142,7 @@ export default function Header() {
             />
           </Link>
 
-          {/* Navigation Items */}
-          <div className="hidden lg:flex items-center space-x-8">
-            <SignedIn>
-              {/* Features */}
-              <div className="navbar-item">
-                <Link 
-                  href="/features" 
-                  className="flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white transition-colors"
-                >
-                  <Layers className="h-4 w-4" />
-                  Features
-                </Link>
-              </div>
-
-              {/* How It Works */}
-              <div className="navbar-item">
-                <Link 
-                  href="/how-it-works" 
-                  className="flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white transition-colors"
-                >
-                  <Cog className="h-4 w-4" />
-                  How It Works
-                </Link>
-              </div>
-
-              {/* FAQs */}
-              <div className="navbar-item">
-                <Link 
-                  href="/faqs" 
-                  className="flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white transition-colors"
-                >
-                  <HelpCircle className="h-4 w-4" />
-                  FAQs
-                </Link>
-              </div>
-            </SignedIn>
-          </div>
+          
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-2 md:space-x-4">
@@ -199,7 +163,7 @@ export default function Header() {
              
               {/* FutureBuild Plus */}
               <a 
-                href="https://futureprep.vercel.app/" 
+                href="https://futureprep-8da5.vercel.app/" 
                 target="_blank" 
                 rel="noopener noreferrer"
               >

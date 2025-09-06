@@ -1,4 +1,5 @@
 import {z} from "zod";
+
 export const onboardingSchema = z.object({
     industry: z.string({
       required_error: "Please select an industry",
@@ -25,20 +26,25 @@ export const onboardingSchema = z.object({
         : undefined
     ),
   });
-
-  export const contactSchema=z.object({
+ 
+export const contactSchema = z.object({
     email: z.string().email("Invalid email address"),
     mobile: z.string().optional(),
     linkedin: z.string().optional(),
     twitter: z.string().optional(),
   });
-  export const entrySchema=z.object({
+
+export const entrySchema = z.object({
     title: z.string().min(1, "Title is required"),
     organization: z.string().min(1, "Organization is required"),
     startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().optional(),
     description: z.string().min(1, "Description is required"),
     current: z.boolean().default(false),
+    // New project-specific fields
+    githubUrl: z.string().url("Invalid GitHub URL").optional().or(z.literal("")),
+    liveUrl: z.string().url("Invalid Live Demo URL").optional().or(z.literal("")),
+    techStack: z.string().optional(),
   }).refine(
     (data) => {
       if (!data.current && !data.endDate) {
@@ -51,16 +57,20 @@ export const onboardingSchema = z.object({
       path: ["endDate"],
     }
   );
+ 
+export const resumeSchema = z.object({
+  contactInfo: contactSchema,
+  summary: z.string().optional().or(z.literal("")), // Made optional to allow gradual filling
+  skills: z.string().optional().or(z.literal("")), // Made optional to allow gradual filling
+  experience: z.array(entrySchema).default([]),
+  education: z.array(entrySchema).default([]),
+  projects: z.array(entrySchema).default([]),
+  // New sections
+  achievements: z.array(entrySchema).default([]),
+  problemSolving: z.array(entrySchema).default([]),
+});
 
-  export const resumeSchema = z.object({
-    contactInfo: contactSchema,
-    summary: z.string().min(1, "Professional summary is required"),
-    skills: z.string().min(1, "Skills are required"),
-    experience: z.array(entrySchema),
-    education: z.array(entrySchema),
-    projects: z.array(entrySchema),
-  });
-  export const coverLetterSchema = z.object({
+export const coverLetterSchema = z.object({
     companyName: z.string().min(1, "Company name is required"),
     jobTitle: z.string().min(1, "Job title is required"),
     jobDescription: z.string().min(1, "Job description is required"),
