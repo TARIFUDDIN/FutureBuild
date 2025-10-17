@@ -49,8 +49,8 @@ RUN npm install
 # 2. Copy Prisma files
 COPY prisma ./prisma/
 
-# 3. Generate the Prisma client (FIX: Use EXPLICIT path to binary)
-# This prevents the recurring "prisma: not found" error.
+# 3. Generate the Prisma client (FIXED: Use EXPLICIT path to binary)
+# This resolves the previous "prisma: not found" error.
 RUN ./node_modules/.bin/prisma generate
 
 COPY . .
@@ -104,6 +104,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# 🛑 FIX: Use explicit Node command for stability instead of 'npm start'
-# This prevents application crashes and ERR_CONNECTION_REFUSED after startup.
-CMD ["node", "./node_modules/next/dist/bin/next", "start"]
+# 🛑 FINAL FIX: Use explicit Node server command for maximum stability
+# This resolves the application crash/refused connection issues.
+CMD ["node", "./.next/standalone/server.js"]
