@@ -1,12 +1,13 @@
-# Dockerfile - Using Debian for better compatibility
+# Dockerfile - Production-Ready for Elastic Beanstalk
+# Fixed for Prisma Client generation in final image
 
-# ---------------------------------------------
-# Stage 1: Dependency Installation (Used by Runner)
-# Only installs production dependencies.
+# =====================================================
+# Stage 1: Dependencies (Production only)
+# =====================================================
 FROM node:18-bookworm-slim AS deps
 WORKDIR /app
 
-# Install canvas dependencies
+# Install system dependencies for native modules (canvas, etc.)
 RUN apt-get update && apt-get install -y \
     python3 \
     build-essential \
@@ -17,16 +18,15 @@ RUN apt-get update && apt-get install -y \
     librsvg2-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy package files
 COPY package.json package-lock.json ./
 
-# Install ONLY production dependencies here
+# Install ONLY production dependencies
 RUN npm ci --only=production
 
-# ---------------------------------------------
-
-
-# ---------------------------------------------
-# Stage 2: Builder (Where Dev Dependencies and Build Steps Run)
+# =====================================================
+# Stage 2: Builder (All dependencies + build)
+# =====================================================
 FROM node:18-bookworm-slim AS builder
 WORKDIR /app
 
@@ -41,33 +41,35 @@ RUN apt-get update && apt-get install -y \
     librsvg2-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy package files
 COPY package.json package-lock.json ./
 
-# 1. Install ALL dependencies (including dev dependencies like Prisma CLI)
+# Install ALL dependencies (including devDependencies like Prisma CLI)
 RUN npm install
 
-# 2. Copy Prisma files
+# Copy Prisma schema
 COPY prisma ./prisma/
 
-# 3. Generate the Prisma client (FIXED: Use EXPLICIT path to binary)
-# This resolves the previous "prisma: not found" error.
+# Generate Prisma Client in builder stage
 RUN ./node_modules/.bin/prisma generate
 
+# Copy entire application
 COPY . .
 
+# Set environment for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Build Next.js application
 RUN npm run build
-# ---------------------------------------------
 
-
-# ---------------------------------------------
-# Stage 3: Runner (Final Image)
+# =====================================================
+# Stage 3: Runner (Final lightweight image)
+# =====================================================
 FROM node:18-bookworm-slim AS runner
 WORKDIR /app
 
-# Install runtime dependencies only
+# Install ONLY runtime dependencies (not build tools)
 RUN apt-get update && apt-get install -y \
     libcairo2 \
     libpango-1.0-0 \
@@ -77,33 +79,41 @@ RUN apt-get update && apt-get install -y \
     librsvg2-2 \
     && rm -rf /var/lib/apt/lists/*
 
+# Set runtime environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-# Create non-root user
+# Create non-root user for security
 RUN groupadd --system --gid 1001 nodejs
 RUN useradd --system --uid 1001 nextjs
 
-# Copy node_modules from 'deps' (prod-only)
+# Copy production node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy built app and generated files
+# Copy built Next.js application
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 
-# Copy the generated Prisma directory from the 'builder' stage
+# Copy Prisma directory (schema + generated client)
 COPY --from=builder /app/prisma ./prisma
 
+# CRITICAL FIX: Regenerate Prisma Client in final image
+# This ensures all binaries are present even after copying
+RUN ./node_modules/.bin/prisma generate
+
+# Set proper file ownership
 RUN chown -R nextjs:nodejs /app
 
+# Switch to non-root user
 USER nextjs
 
+# Expose port
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-# 🛑 FINAL FIX: Use explicit Node server command for maximum stability
-# This resolves the application crash/refused connection issues.
-CMD ["node", "./.next/standalone/server.js"]
+# Start the application
+# Using 'npm start' which runs 'next start' from package.json
+# This is more stable than standalone mode
+CMD ["npm", "start"]
