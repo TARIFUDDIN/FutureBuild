@@ -2,7 +2,7 @@
 
 # ---------------------------------------------
 # Stage 1: Dependency Installation (Used by Runner)
-# We keep this lightweight, only installing production dependencies.
+# Only installs production dependencies.
 FROM node:18-bookworm-slim AS deps
 WORKDIR /app
 
@@ -22,8 +22,6 @@ COPY package.json package-lock.json ./
 # Install ONLY production dependencies here
 RUN npm ci --only=production
 
-# 🛑 REMOVED: COPY prisma/ and RUN npx prisma generate from here.
-# These will now run in the 'builder' stage.
 # ---------------------------------------------
 
 
@@ -51,8 +49,9 @@ RUN npm install
 # 2. Copy Prisma files
 COPY prisma ./prisma/
 
-# 3. Generate the Prisma client (Should now work as Prisma is installed)
-RUN npx prisma generate
+# 3. Generate the Prisma client (FIX: Use EXPLICIT path to binary)
+# This prevents the recurring "prisma: not found" error.
+RUN ./node_modules/.bin/prisma generate
 
 COPY . .
 
@@ -85,15 +84,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN groupadd --system --gid 1001 nodejs
 RUN useradd --system --uid 1001 nextjs
 
-# 🛑 UPDATED: Copy node_modules from 'deps' (prod-only)
+# Copy node_modules from 'deps' (prod-only)
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy built app and necessary files
+# Copy built app and generated files
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 
-# 🛑 UPDATED: Copy the generated Prisma directory from the 'builder' stage
+# Copy the generated Prisma directory from the 'builder' stage
 COPY --from=builder /app/prisma ./prisma
 
 RUN chown -R nextjs:nodejs /app
@@ -105,5 +104,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["npm", "start"]
-# ---------------------------------------------
+# 🛑 FIX: Use explicit Node command for stability instead of 'npm start'
+# This prevents application crashes and ERR_CONNECTION_REFUSED after startup.
+CMD ["node", "./node_modules/next/dist/bin/next", "start"]
